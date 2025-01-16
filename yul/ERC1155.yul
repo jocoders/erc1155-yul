@@ -41,15 +41,15 @@ object "ERC1155Yul" {
 
         mstore(0x00, to)
         mstore(0x20, id)
-        let balanceTo := sload(keccak256(0x00, 0x20))
+        let balanceTo := sload(keccak256(0x00, 0x40))
         let newBalanceTo := safeAdd(balanceTo, amount)
 
         mstore(0x00, to)
         mstore(0x20, id)
         sstore(keccak256(0x00, 0x40), newBalanceTo)
 
-        let sender := caller()
         // emit TransferSingle(address,address,uint256,uint256,bytes)
+        let sender := caller()
         mstore(0x00, id)
         mstore(0x20, amount)
         log4(0, 0x40, 0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62, sender, 0x00, to)
@@ -87,6 +87,10 @@ object "ERC1155Yul" {
         let condition := or(eq(from, sender), sload(keccak256(0x00, 0x40)))
         require(condition)
 
+        // mstore(0x00, 0x01)
+        // mstore(0x20, 0x02)
+        // log4(0, 0x40, 0x777, from, sender, condition)
+
         let to := decodeToAddress(1)
         let id := decodeToUint(2)
         let amount := decodeToUint(3)
@@ -102,7 +106,7 @@ object "ERC1155Yul" {
 
         mstore(0x00, to)
         mstore(0x20, id)
-        let balanceTo := sload(keccak256(0x00, 0x20))
+        let balanceTo := sload(keccak256(0x00, 0x40))
         let newBalanceTo := safeAdd(balanceTo, amount)
 
         mstore(0x00, to)
@@ -173,6 +177,13 @@ object "ERC1155Yul" {
         if iszero(extcodesize(to)) {
           require(to)
         }
+
+
+          // 1) selector keep in 0x00-0x04 || 0x00-0x20
+          // 2) need to save data offset for calldata? where to store it?
+          // after selectore or after all data?
+          // 3) argsOffset is it offset for start all data? It means after selector?
+          // 4) argSize includes selector 4 bytes or no?
 
         if extcodesize(to) {
           /* onERC1155Received(address,address,uint256,uint256,bytes) */

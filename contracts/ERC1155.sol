@@ -71,7 +71,6 @@ abstract contract ERC1155 {
     bytes calldata data
   ) public virtual {
     require(ids.length == amounts.length, 'LENGTH_MISMATCH');
-
     require(msg.sender == from || isApprovedForAll[from][msg.sender], 'NOT_AUTHORIZED');
 
     // Storing these outside the loop saves ~15 gas per iteration.
