@@ -29,6 +29,14 @@ contract Receiever {
     _id = id;
     _amount = amount;
     _data = data;
+
+    // console.log('2_FROM', _from);
+    // console.log('2_TO', _to);
+    // console.log('2_ID', _id);
+    // console.log('2_AMOUNT', _amount);
+    // console.log('2_DATA_START');
+    // console.logBytes(_data);
+    // console.log('2_DATA_END');
     return ERC1155_RECEIVED;
   }
 }
@@ -98,13 +106,13 @@ contract ERC1155YulTest is Test {
     (bool success, ) = erc1155().call(callDataBytes);
     assertTrue(success, 'Failed to mint');
 
-    console.log('FROM', receiever._from());
-    console.log('TO', receiever._to());
-    console.log('ID', receiever._id());
-    console.log('AMOUNT', receiever._amount());
-    console.log('DATA_START');
+    console.log('1_FROM', receiever._from());
+    console.log('1_TO', receiever._to());
+    console.log('1_ID', receiever._id());
+    console.log('1_AMOUNT', receiever._amount());
+    console.log('1_DATA_START');
     console.logBytes(receiever._data());
-    console.log('DATA_END');
+    console.log('1_DATA_END');
   }
 
   // function testCheckDecodeToUint(uint256 value) public {

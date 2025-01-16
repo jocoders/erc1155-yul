@@ -178,29 +178,20 @@ object "ERC1155Yul" {
           /* onERC1155Received(address,address,uint256,uint256,bytes) */
           let p := mload(0x40)
 
-
-          // 1) selector keep in 0x00-0x04 || 0x00-0x20
-
-          // 2) need to save data offset for calldata? where to store it?
-          // after selectore or after all data?
-
-          // 3) argsOffset is it offset for start all data? It means after selector?
-
-          // 4) argSize includes selector 4 bytes or no?
-
           mstore(p, 0xf23a6e61)
           mstore(add(p, 0x20), sender)
           mstore(add(p, 0x40), from)
           mstore(add(p, 0x60), id)
           mstore(add(p, 0x80), amount)
+          mstore(add(p, 0xa0), 0x20)
 
 
           let dataLength := calldataload(0x84)
-          mstore(add(p, 0xa0), dataLength)
+          mstore(add(p, 0xc0), dataLength)
 
-          calldatacopy(add(p, 0xc0), 0xa4, dataLength)
+          calldatacopy(add(p, 0xe0), 0xa4, dataLength)
 
-          let argSize := add(0xc0, dataLength)
+          let argSize := add(0xe0, dataLength)
           let success := call(gas(), to, 0, add(p, 0x1c), argSize, 0x00, 0x20)
 
           mstore(0x00, success)
