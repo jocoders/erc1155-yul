@@ -5,7 +5,7 @@ object "ERC1155Yul" {
   }
   object "Runtime" {
     code {
-      // Protection against sending Ether
+      /* Protection against sending Ether */
       require(iszero(callvalue()))
 
       switch selector()
@@ -14,176 +14,170 @@ object "ERC1155Yul" {
         let operator := decodeToAddress(0)
         let approved := decodeToUint(1)
         let sender := caller()
-
-        mstore(0x00, sender)
-        mstore(0x20, operator)
-        sstore(keccak256(0x00, 0x40), approved)
-
-        // emit ApprovalForAll(address,address,bool)
-        mstore(0x00, approved)
-        log3(0, 0x20, 0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31, sender, operator)
+        storeVal(sender, operator, approved)
+        emitApprovalForAll(sender, operator, approved)
       }
       /* supportsInterface(bytes4 interfaceId) */
       case 0x01ffc9a7 { 
-          let interfaceId := calldataload(0x04)
           // ERC165 Interface ID for ERC165
           // ERC165 Interface ID for ERC1155
           // ERC165 Interface ID for ERC1155MetadataURI
+          let interfaceId := calldataload(0x04)
           let b := or(or(eq(interfaceId, 0x01ffc9a7), eq(interfaceId, 0xd9b67a26)), eq(interfaceId, 0x0e89341c))
           mstore(0x00, b)
           return(0x00, 0x20)
       }
       /* mint(address,uint256,uint256,bytes) */
       case 0x731133e9 {
+        let sender := caller()
         let to := decodeToAddress(0)
         let id := decodeToUint(1)
         let amount := decodeToUint(2)
-
-        mstore(0x00, to)
-        mstore(0x20, id)
-        let balanceTo := sload(keccak256(0x00, 0x40))
+        let balanceTo := getBalance(to, id)
         let newBalanceTo := safeAdd(balanceTo, amount)
-
-        mstore(0x00, to)
-        mstore(0x20, id)
-        sstore(keccak256(0x00, 0x40), newBalanceTo)
-
-        // emit TransferSingle(address,address,uint256,uint256,bytes)
-        let sender := caller()
-        mstore(0x00, id)
-        mstore(0x20, amount)
-        log4(0, 0x40, 0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62, sender, 0x00, to)
-
+        storeVal(to, id, newBalanceTo)
+        emitTransferSingle(sender, 0x00, to, id, amount)
         validateERC1155Recipient(sender, 0x00, to, id, amount)
+      }
+      /* batchMint(address,uint256[],uint256[],bytes) */
+      case 0xb48ab8b6 {
+        let sender := caller()
+        let to := decodeToAddress(0)
+        let idsOffset := calldataload(0x24)
+        let amountsOffset := calldataload(0x44)
+        let idsLength := calldataload(add(idsOffset, 0x04))
+        let amountsLength := calldataload(add(amountsOffset, 0x04))
+        checkLengthsEqual(idsLength, amountsLength)
+
+        for { let i := 0} lt(i, idsLength) { i := add(i, 1)} {
+          // balanceOf[to][ids[i]] += amounts[i];
+          let id := calldataload(add(idsDataOffset, mul(i, 0x20)))
+          let amount := calldataload(add(amountsDataOffset, mul(i, 0x20)))
+          let bal := getBalance(to, id)
+          let newBal := safeAdd(bal, amount)
+          storeVal(to, id, newBal)
+        }
+        emitTransferBatch(sender, 0x00, to, idsOffset, amountsOffset)
+        validateERC1155BatchRecipient(sender, 0x00, to, idsOffset, amountsOffset)
       }
       /* burn(address,uint256,uint256) */
       case 0xf5298aca {
         let from := decodeToAddress(0)
         let id := decodeToUint(1)
         let amount := decodeToUint(2)
-
-        mstore(0x00, from)
-        mstore(0x20, id)
-        let balanceFrom := sload(keccak256(0x00, 0x40))
+        let balanceFrom := getBalance(from, id)
         let newBalanceFrom := safeSub(balanceFrom, amount)
+        storeVal(from, id, newBalanceFrom)
+        emitTransferSingle(caller(), from, 0x00, id, amount)
+      }
+      /* batchBurn(address,uint256[],uint256[]) */
+      case 0xf6eb127a {
+        let sender := caller()
+        let from := decodeToAddress(0)
+        let idsOffset := calldataload(0x24)
+        let amountsOffset := calldataload(0x44)
+        let idsLength := calldataload(add(idsOffset, 0x04))
+        let amountsLength := calldataload(add(amountsOffset, 0x04))
+        checkLengthsEqual(idsLength, amountsLength)
 
-        mstore(0x00, from)
-        mstore(0x20, id)
-        sstore(keccak256(0x00, 0x40), newBalanceFrom)
+        for { let i := 0} lt(i, idsLength) { i := add(i, 1)} {
+          // balanceOf[from][ids[i]] -= amounts[i];
+          let id := calldataload(add(idsDataOffset, mul(i, 0x20)))
+          let amount := calldataload(add(amountsDataOffset, mul(i, 0x20)))
+          let bal := getBalance(from, id)
+          let newBal := safeSub(bal, amount)
+          storeVal(from, id, newBal)
+        }
+        emitTransferBatch(sender, from, 0x00, idsOffset, amountsOffset)
+      }
+      /* balanceOfBatch(address[],uint256[])*/
+      case 0x4e1273f4 {
+        let accOffset := calldataload(0x04) 
+        let idsOffset := calldataload(0x24)
+        let accountsLength := calldataload(add(accOffset, 0x04))
+        let idsLength := calldataload(add(idsOffset, 0x04))
+        checkLengthsEqual(accountsLength, idsLength)
 
-        // emit TransferSingle(address,address,uint256,uint256,bytes)
-        mstore(0x00, id)
-        mstore(0x20, amount)
-        log4(0, 0x40, 0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62, caller(), from, 0x00)
+        let accDataOffset := add(add(accOffset, 0x04), 0x20)
+        let idsDataOffset := add(add(idsOffset, 0x04), 0x20)
+
+        let ptr := 0x80
+        mstore(ptr, 0x20)
+        ptr := add(ptr, 0x20)
+
+        mstore(ptr, idsLength)
+        ptr := add(ptr, 0x20)
+
+        for { let i := 0} lt(i, idsLength) { i := add(i, 1)} {
+          let owner := calldataload(add(accDataOffset, mul(i, 0x20)))
+          let id := calldataload(add(idsDataOffset, mul(i, 0x20)))
+          let bal := getBalance(owner, id)
+          let sPtr := add(ptr, mul(i, 0x20))
+          mstore(sPtr, bal)
+        }
+
+        let retLength := add(mul(idsLength, 0x20), 0x40)
+
+        return(0x80, retLength)
       }
       /* safeTransferFrom(address,address,uint256,uint256,bytes) */
       case 0xf242432a  {
         let from := decodeToAddress(0)
-        let sender := caller()
-
-        mstore(0x00, from)
-        mstore(0x20, sender)
-
-        let condition := or(eq(from, sender), sload(keccak256(0x00, 0x40)))
-        require(condition)
-
-        // mstore(0x00, 0x01)
-        // mstore(0x20, 0x02)
-        // log4(0, 0x40, 0x777, from, sender, condition)
+        checkIsAuthorized(from)
 
         let to := decodeToAddress(1)
         let id := decodeToUint(2)
         let amount := decodeToUint(3)
-
-        mstore(0x00, from)
-        mstore(0x20, id)
-        let balanceFrom := sload(keccak256(0x00, 0x40))
+        let balanceFrom := getBalance(from, id)
         let newBalanceFrom := safeSub(balanceFrom, amount)
+        storeVal(from, id, newBalanceFrom)
 
-        mstore(0x00, from)
-        mstore(0x20, id)
-        sstore(keccak256(0x00, 0x40), newBalanceFrom)
-
-        mstore(0x00, to)
-        mstore(0x20, id)
-        let balanceTo := sload(keccak256(0x00, 0x40))
+        let balanceTo := getBalance(to, id)
         let newBalanceTo := safeAdd(balanceTo, amount)
+        storeVal(to, id, newBalanceTo)
 
-        mstore(0x00, to)
-        mstore(0x20, id)
-        sstore(keccak256(0x00, 0x40), newBalanceTo)
-
-        // emit TransferSingle(address,address,uint256,uint256,bytes)
-        mstore(0x00, id)
-        mstore(0x20, amount)
-        log4(0, 0x40, 0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62, sender, from, to)
-
-        validateERC1155Recipient(sender, from, to, id, amount)
+        emitTransferSingle(caller(), from, to, id, amount)
+        validateERC1155Recipient(caller(), from, to, id, amount)
       }
-      /* checkDecodeToUint(uint256) */
-      case 0x7a8c9ddb  {
-        let value := decodeToUint(0)
-        let freeMemPointer := mload(0x40)
-        mstore(freeMemPointer, value)
-
-        return(freeMemPointer, 0x20)
-      }
-      /* checkDecodeToAddress(address) */
-      case 0xa5ce3326  {
-        let value := decodeToAddress(0)
-        let freeMemPointer := mload(0x40)
-        mstore(freeMemPointer, value)
-
-        return(freeMemPointer, 0x20)
-      }
-      /* balanceOfBatch(address[],uint256[])*/
-      case 0x4e1273f4 {
-        let s7 := shr(224, calldataload(0x00))  // Извлечение селектора
-
-        let accountsOffset := calldataload(0x04) // 0x40
-        let idsOffset := calldataload(0x24)
-
-        let accountsLength := calldataload(add(accountsOffset, 0x04))
+      /* safeBatchTransferFrom(address,address,uint256[],uint256[],bytes) */
+      case 0x2eb2c2d6 {
+        let sender := caller()
+        let from := decodeToAddress(0)
+        let to := decodeToAddress(1)
+        let idsOffset := calldataload(0x44)
+        let amountsOffset := calldataload(0x64)
         let idsLength := calldataload(add(idsOffset, 0x04))
-
-        require(eq(accountsLength, idsLength))
-
-        let p := mload(0x40)
-        mstore(p, idsLength)
+        let amountsLength := calldataload(add(amountsOffset, 0x04))
+        checkLengthsEqual(idsLength, amountsLength)
+        checkIsAuthorized(from)
 
         for { let i := 0} lt(i, idsLength) { i := add(i, 1)} {
-          let owner := calldataload(add(accountsOffset, mul(i, 0x20)))
+          let id := calldataload(add(idsOffset, mul(i, 0x20)))
+          let amount := calldataload(add(amountsOffset, mul(i, 0x20)))
+
+          let balanceFrom := getBalance(from, id)
+          let newBalanceFrom := safeSub(balanceFrom, amount)
+          storeVal(from, id, newBalanceFrom)
+
+          let balanceTo := getBalance(to, id)
+          let newBalanceTo := safeAdd(balanceTo, amount)
+          storeVal(to, id, newBalanceTo)
         }
 
-        // let accountsLength := calldataload(accountsOffset)
-
-        // let account1 := calldataload(add(accountsOffset, 0x20))
-        // let account2 := calldataload(add(accountsOffset, 0x40))
-
-        mstore(0x00, 0x01)  // 0               1                     2                   3
-        log4(0, 0x20, calldataload(0x04), calldataload(0x24), calldataload(0x44), calldataload(0x64))
-
-        mstore(0x00, 0x02)  // 0               1                     2                   3
-        log4(0, 0x20, calldataload(0x84), calldataload(0xa4), calldataload(0xc4), calldataload(0xe4))
-
-        mstore(0x00, 0x03)  // 0               1                     2                   3
-        log4(0, 0x20, calldataload(0x104), calldataload(0x124), calldataload(0x144), calldataload(0x164))
+        emitTransferBatch(sender, from, to, idsOffset, amountsOffset)
+        validateERC1155BatchRecipient(sender, from, to, idsOffset, amountsOffset)
       }
       default {
         revert(0, 0)
       }
 
+   
+
+      /* ---------- ERC1155 recipient validation ----------- */
       function validateERC1155Recipient(sender, from, to, id, amount) {
         if iszero(extcodesize(to)) {
           require(to)
         }
-
-
-          // 1) selector keep in 0x00-0x04 || 0x00-0x20
-          // 2) need to save data offset for calldata? where to store it?
-          // after selectore or after all data?
-          // 3) argsOffset is it offset for start all data? It means after selector?
-          // 4) argSize includes selector 4 bytes or no?
 
         if extcodesize(to) {
           /* onERC1155Received(address,address,uint256,uint256,bytes) */
@@ -223,6 +217,38 @@ object "ERC1155Yul" {
           // require(eq(0x150b7a02, shr(224, mload(0x00))))
         }
       }
+      function validateERC1155BatchRecipient(sender, from, ids, amounts, cData) {
+        if iszero(extcodesize(to)) {
+          require(to)
+        }
+
+        if extcodesize(to) {
+
+        }
+
+      }
+
+      function getBalance(owner, id) -> bal {
+        mstore(0x00, owner)
+        mstore(0x20, id)
+        bal := sload(keccak256(0x00, 0x40))
+      }
+      function checkIsAuthorized(from) {
+        let sender := caller()
+        mstore(0x00, from)
+        mstore(0x20, sender)
+        let condition := or(eq(from, sender), sload(keccak256(0x00, 0x40)))
+        require(condition)
+      }
+      function checkLengthsEqual(idsLength, amountsLength) {
+        require(eq(idsLength, amountsLength))
+      }
+      function storeVal(key1, key2, val) {
+        mstore(0x00, key1)
+        mstore(0x20, key2)
+        sstore(keccak256(0x00, 0x40), val)
+      }
+
       /* ---------- calldata decoding functions ----------- */
       function selector() -> s {
           s := div(calldataload(0), 0x100000000000000000000000000000000000000000000000000000000)
@@ -242,36 +268,13 @@ object "ERC1155Yul" {
         v := calldataload(pos)
       }
 
-      function decodeToBytes(offset) -> dataPointer, dataLength {
-        let pos := add(4, mul(offset, 0x20))
-    
-        if lt(calldatasize(), add(pos, 0x20)) {
-         revert(0, 0)
-        }
-
-        dataPointer := calldataload(pos)
-
-        if lt(calldatasize(), add(dataPointer, 0x20)) {
-          revert(0, 0)
-        }
-
-        dataLength := calldataload(add(dataPointer, 0x04))
-
-        if lt(calldatasize(), add(add(dataPointer, 0x20), dataLength)) {
-            revert(0, 0)
-        }
-
-        dataPointer := add(dataPointer, 0x24)
-      }
-
-      /* ---------- helpers functions ----------- */
+      /* ---------- math helpers ----------- */
       function safeSub(x, y) -> res {
         if iszero(iszero(gt(y, x))) {
           revert(0, 0)
         }
         res := sub(x, y)
       }
-
       function safeAdd(x, y) -> res {
         res := add(x, y)
 
@@ -279,9 +282,80 @@ object "ERC1155Yul" {
           revert(0, 0)
         }
       }
+      function copyArray(mptr, arrOffset) -> newMptr {
+        let arrLenOffset := add(arrOffset, 4)
+        let arrLen := calldataload(arrLenOffset)
+        let totalLen := add(0x20, mul(arrLen, 0x20)) // len+arrData
+        calldatacopy(mptr, arrLenOffset, totalLen) // copy len+data to mptr
 
+        newMptr := add(mptr, totalLen)
+      }
+
+      /* ---------- require ----------- */
       function require(condition) {
         if iszero(condition) { revert(0, 0) }
+      }
+      /* ---------- events ----------- */
+      // TransferSingle(address,address,address,uint256,uint256)
+      function emitTransferSingle(operator, from, to, id, amount) {
+        let sigHash := 0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62
+        mstore(0x00, id)
+        mstore(0x20, amount)
+        log4(0, 0x40, sigHash, operator, from, to)
+      }
+      // ApprovalForAll(address,address,bool)
+      function emitApprovalForAll(owner, operator, approved) {
+        let sigHash := 0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31
+        mstore(0x00, approved)
+        log3(0, 0x20, sigHash, owner, operator)
+      }
+      // TransferBatch(address,address,address,uint256[],uint256[])
+      function emitTransferBatch(operator, from, to, idsOffset, valuesOffset) {
+        let sigHash := 0x4a39dc06d4c0dbc64b70af90fd698a233a518aa5d07e595d983b8c0526c8f7fb
+        let oldMptr := mload(0x40)
+        let mptr := oldMptr
+        let idsOffsetPtr := mptr
+        let valuesOffsetPtr := add(mptr, 0x20)
+
+        mstore(idsOffsetPtr, 0x40) // ids offset
+        let valuesPtr := copyArray(add(mptr, 0x40), idsOffset) // copy ids arary to memory
+        mstore(valuesOffsetPtr, sub(valuesPtr, oldMptr)) // store values Offset
+        let endPtr := copyArray(valuesPtr, valuesOffset) // copy values array to memory
+
+        log4(oldMptr, sub(endPtr, oldMptr), sigHash, operator, from, to)
+        mstore(0x40, endPtr) // update Free Memory Pointer
+      }
+
+
+      /* ---------- revert messages ----------- */
+      function revertNotAuthorized() {
+        /* "ERC1155: not authorized" */
+        let mptr := 0x00
+        mstore(mptr, 0x8c379a000000000000000000000000000000000000000000000000000000000)
+        mstore(add(mptr, 0x04), 0x20)
+        mstore(add(mptr, 0x24), 0x17) // Длина сообщения "ERC1155: not authorized"
+        mstore(add(mptr, 0x44), 0x455243313135353a206e6f7420617574686f72697a6564000000000000000000)
+        revert(mptr, 0x64) // 0x64 = 100 байтов до конца сообщения
+      }
+
+      function revertUnsafeRecipient() {
+        /* "ERC1155: unsafe recipient" */
+        let mptr := 0x00
+        mstore(mptr, 0x8c379a000000000000000000000000000000000000000000000000000000000)
+        mstore(add(mptr, 0x04), 0x20)
+        mstore(add(mptr, 0x24), 0x19) // Длина сообщения "ERC1155: unsafe recipient"
+        mstore(add(mptr, 0x44), 0x455243313135353a20756e7361666520726563697069656e7400000000000000)
+        revert(mptr, 0x64) // 0x64 = 100 байтов до конца сообщения
+      }
+
+      function revertLengthMismatch() {
+        /* "ERC1155: length mismatch" */
+        let mptr := 0x00
+        mstore(mptr, 0x8c379a000000000000000000000000000000000000000000000000000000000)
+        mstore(add(mptr, 0x04), 0x20)
+        mstore(add(mptr, 0x24), 0x18) // Длина сообщения "ERC1155: length mismatch"
+        mstore(add(mptr, 0x44), 0x455243313135353a206c656e677468206d69736d617463680000000000000000)
+        revert(mptr, 0x64) // 0x64 = 100 байтов до конца сообщения
       }
     }
   }
