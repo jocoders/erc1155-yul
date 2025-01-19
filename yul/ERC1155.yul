@@ -27,6 +27,14 @@ object "ERC1155Yul" {
           mstore(0x00, b)
           return(0x00, 0x20)
       }
+      /* isApprovedForAll(address,address) */
+      case 0xe985e9c5 {
+        let owner := decodeToAddress(0)
+        let operator := decodeToAddress(1)
+        let val := getVal(owner, operator)
+        mstore(0x00, val)
+        return(0x00, 0x20)
+      }
       /* mint(address,uint256,uint256,bytes) */
       case 0x731133e9 {
         let sender := caller()
@@ -36,8 +44,8 @@ object "ERC1155Yul" {
         let balanceTo := getBalance(to, id)
         let newBalanceTo := safeAdd(balanceTo, amount)
         storeVal(to, id, newBalanceTo)
-        //emitTransferSingle(sender, 0x00, to, id, amount)
-        //validateERC1155Recipient(sender, 0x00, to, id, amount)
+        emitTransferSingle(sender, 0x00, to, id, amount)
+        validateERC1155Recipient(sender, 0x00, to, id, amount)
       }
       /* batchMint(address,uint256[],uint256[],bytes) */
       case 0xb48ab8b6 {
@@ -188,38 +196,36 @@ object "ERC1155Yul" {
           let dataOffset := calldataload(0x84)
           let dataLength := calldataload(add(dataOffset, 0x04))
           mstore(0xc0, dataLength)
-
           calldatacopy(0xe0, 0xc4, dataLength)
 
           let argSize := add(0xe0, dataLength)
           let success := call(gas(), to, 0, 0x1c, argSize, 0x00, 0x20)
+          require(success)
 
-          mstore(0x00, dataLength)
-          log4(0, 0x20, dataOffset, dataOffset, dataLength, dataLength)
-
-          // require(success)
-
-          // if iszero(eq(0xf23a6e61, shr(224, mload(0x00)))) {
-          //     mstore(0x00, 0xd1a57ed6)
-          //     revert(0x1c, 0x04)    
-          // }
-
-          // require(call(gas(), to, 0, 0x00, add(0xc0, dataLength), 0x00, 0x20))
-          // call(gas(), token, 0, callData, 0x64, 0, 0)
-          // require(iszero(eq(returndatasize(), 0x20)))
-
-          // returndatacopy(0x00, 0x00, 0x20)
-          // require(eq(0x150b7a02, shr(224, mload(0x00))))
+          let retSelector := shr(224, mload(0x00))
+          require(eq(retSelector, 0xf23a6e61))
+          emitTransferSingle(sender, from, to, id, amount)
         }
       }
-      function validateERC1155BatchRecipient(sender, from, ids, amounts, cData) {
-        // if iszero(extcodesize(to)) {
-        //   require(to)
-        // }
+      function validateERC1155BatchRecipient(sender, from, to, idsOffset, amountsOffset) {
+        if iszero(extcodesize(to)) {
+          require(to)
+        }
 
-        // if extcodesize(to) {
+        if extcodesize(to) {
+          mstore(0x00, 0xbc197c81)
+          mstore(0x20, sender)
+          mstore(0x40, from)
+          let dataLength := sub(calldatasize(), idsOffset)
+          calldatacopy(0x60, idsOffset, dataLength)
+          let argSize := add(0x60, dataLength)
+          let success := call(gas(), to, 0, 0x1c, argSize, 0x00, 0x20)
+          require(success)
 
-        // }
+          let retSelector := shr(224, mload(0x00))
+          require(eq(retSelector, 0xbc197c81))
+          emitTransferBatch(sender, from, to, idsOffset, amountsOffset)
+        }
       }
 
       function getBalance(owner, id) -> bal {
@@ -276,7 +282,7 @@ object "ERC1155Yul" {
           revert(0, 0)
         }
       }
-      function copyArray(mptr, arrOffset) -> newMptr {
+      function callDataCopy(mptr, arrOffset) -> newMptr {
         let arrLenOffset := add(arrOffset, 4)
         let arrLen := calldataload(arrLenOffset)
         let totalLen := add(0x20, mul(arrLen, 0x20)) // len+arrData
@@ -312,9 +318,9 @@ object "ERC1155Yul" {
         let valuesOffsetPtr := add(mptr, 0x20)
 
         mstore(idsOffsetPtr, 0x40) // ids offset
-        let valuesPtr := copyArray(add(mptr, 0x40), idsOffset) // copy ids arary to memory
+        let valuesPtr := callDataCopy(add(mptr, 0x40), idsOffset) // copy ids arary to memory
         mstore(valuesOffsetPtr, sub(valuesPtr, oldMptr)) // store values Offset
-        let endPtr := copyArray(valuesPtr, valuesOffset) // copy values array to memory
+        let endPtr := callDataCopy(valuesPtr, valuesOffset) // copy values array to memory
 
         log4(oldMptr, sub(endPtr, oldMptr), sigHash, operator, from, to)
         mstore(0x40, endPtr) // update Free Memory Pointer
