@@ -36,8 +36,8 @@ object "ERC1155Yul" {
         let balanceTo := getBalance(to, id)
         let newBalanceTo := safeAdd(balanceTo, amount)
         storeVal(to, id, newBalanceTo)
-        emitTransferSingle(sender, 0x00, to, id, amount)
-        validateERC1155Recipient(sender, 0x00, to, id, amount)
+        //emitTransferSingle(sender, 0x00, to, id, amount)
+        //validateERC1155Recipient(sender, 0x00, to, id, amount)
       }
       /* batchMint(address,uint256[],uint256[],bytes) */
       case 0xb48ab8b6 {
@@ -51,8 +51,8 @@ object "ERC1155Yul" {
 
         for { let i := 0} lt(i, idsLength) { i := add(i, 1)} {
           // balanceOf[to][ids[i]] += amounts[i];
-          let id := calldataload(add(idsDataOffset, mul(i, 0x20)))
-          let amount := calldataload(add(amountsDataOffset, mul(i, 0x20)))
+          let id := calldataload(add(idsOffset, mul(i, 0x20)))
+          let amount := calldataload(add(amountsOffset, mul(i, 0x20)))
           let bal := getBalance(to, id)
           let newBal := safeAdd(bal, amount)
           storeVal(to, id, newBal)
@@ -82,8 +82,8 @@ object "ERC1155Yul" {
 
         for { let i := 0} lt(i, idsLength) { i := add(i, 1)} {
           // balanceOf[from][ids[i]] -= amounts[i];
-          let id := calldataload(add(idsDataOffset, mul(i, 0x20)))
-          let amount := calldataload(add(amountsDataOffset, mul(i, 0x20)))
+          let id := calldataload(add(idsOffset, mul(i, 0x20)))
+          let amount := calldataload(add(amountsOffset, mul(i, 0x20)))
           let bal := getBalance(from, id)
           let newBal := safeSub(bal, amount)
           storeVal(from, id, newBal)
@@ -136,7 +136,7 @@ object "ERC1155Yul" {
         let newBalanceTo := safeAdd(balanceTo, amount)
         storeVal(to, id, newBalanceTo)
 
-        emitTransferSingle(caller(), from, to, id, amount)
+        // emitTransferSingle(caller(), from, to, id, amount)
         validateERC1155Recipient(caller(), from, to, id, amount)
       }
       /* safeBatchTransferFrom(address,address,uint256[],uint256[],bytes) */
@@ -171,8 +171,6 @@ object "ERC1155Yul" {
         revert(0, 0)
       }
 
-   
-
       /* ---------- ERC1155 recipient validation ----------- */
       function validateERC1155Recipient(sender, from, to, id, amount) {
         if iszero(extcodesize(to)) {
@@ -180,27 +178,24 @@ object "ERC1155Yul" {
         }
 
         if extcodesize(to) {
-          /* onERC1155Received(address,address,uint256,uint256,bytes) */
-          let p := mload(0x40)
+          mstore(0x00, 0xf23a6e61)
+          mstore(0x20, sender)
+          mstore(0x40, from)
+          mstore(0x60, id)
+          mstore(0x80, amount)
+          mstore(0xa0, 0xa0)
+          
+          let dataOffset := calldataload(0x84)
+          let dataLength := calldataload(add(dataOffset, 0x04))
+          mstore(0xc0, dataLength)
 
-          mstore(p, 0xf23a6e61)
-          mstore(add(p, 0x20), sender)
-          mstore(add(p, 0x40), from)
-          mstore(add(p, 0x60), id)
-          mstore(add(p, 0x80), amount)
-          mstore(add(p, 0xa0), 0x20)
-
-
-          let dataLength := calldataload(0x84)
-          mstore(add(p, 0xc0), dataLength)
-
-          calldatacopy(add(p, 0xe0), 0xa4, dataLength)
+          calldatacopy(0xe0, 0xc4, dataLength)
 
           let argSize := add(0xe0, dataLength)
-          let success := call(gas(), to, 0, add(p, 0x1c), argSize, 0x00, 0x20)
+          let success := call(gas(), to, 0, 0x1c, argSize, 0x00, 0x20)
 
-          mstore(0x00, success)
-          log4(0, 0x20, 0x173, dataLength, calldataload(0xa4), mload(0x20))
+          mstore(0x00, dataLength)
+          log4(0, 0x20, dataOffset, dataOffset, dataLength, dataLength)
 
           // require(success)
 
@@ -218,14 +213,13 @@ object "ERC1155Yul" {
         }
       }
       function validateERC1155BatchRecipient(sender, from, ids, amounts, cData) {
-        if iszero(extcodesize(to)) {
-          require(to)
-        }
+        // if iszero(extcodesize(to)) {
+        //   require(to)
+        // }
 
-        if extcodesize(to) {
+        // if extcodesize(to) {
 
-        }
-
+        // }
       }
 
       function getBalance(owner, id) -> bal {

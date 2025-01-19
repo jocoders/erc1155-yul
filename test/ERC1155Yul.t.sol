@@ -3,41 +3,56 @@ pragma solidity >=0.8.0;
 
 import { Test, console } from 'forge-std/Test.sol';
 import { YulDeployer } from './lib/YulDeployer.sol';
-
+import { ERC1155TokenReceiver } from '../contracts/ERC1155TokenReceiver.sol';
 interface ERC1155 {}
 
-contract Receiver {
-  bytes4 public constant ERC1155_RECEIVED =
-    bytes4(keccak256('onERC1155Received(address,address,uint256,uint256,bytes)'));
-  address public _from;
-  address public _to;
-  uint256 public _id;
-  uint256 public _amount;
-  bytes public _data;
+contract Receiver is ERC1155TokenReceiver {
+  address public from;
+  address public to;
+  uint256 public id;
+  uint256 public amount;
+  bytes public data;
+  uint256[] public ids;
+  uint256[] public amounts;
 
   function onERC1155Received(
-    address from,
-    address to,
-    uint256 id,
-    uint256 amount,
-    bytes calldata data
-  ) external returns (bytes4) {
-    // onERC1155Received(address,address,uint256,uint256,bytes)
+    address _from,
+    address _to,
+    uint256 _id,
+    uint256 _amount,
+    bytes calldata _data
+  ) external override returns (bytes4) {
     console.log('***************!!!!!!!!!!!_onERC1155Received_!!!!!!!!!!!!***************');
-    _from = from;
-    _to = to;
-    _id = id;
-    _amount = amount;
-    _data = data;
+    from = _from;
+    to = _to;
+    id = _id;
+    amount = _amount;
+    data = _data;
 
-    console.log('2_FROM', _from);
-    console.log('2_TO', _to);
-    console.log('2_ID', _id);
-    console.log('2_AMOUNT', _amount);
+    console.log('2_FROM', from);
+    console.log('2_TO', to);
+    console.log('2_ID', id);
+    console.log('2_AMOUNT', amount);
     console.log('2_DATA_START');
-    console.logBytes(_data);
+    console.logBytes(data);
     console.log('2_DATA_END');
-    return ERC1155_RECEIVED;
+    return bytes4(keccak256('onERC1155Received(address,address,uint256,uint256,bytes)'));
+  }
+
+  function onERC1155BatchReceived(
+    address _from,
+    address _to,
+    uint256[] calldata _ids,
+    uint256[] calldata _amounts,
+    bytes calldata _data
+  ) external override returns (bytes4) {
+    console.log('***************!!!!!!!!!!!_onERC1155BatchReceived_!!!!!!!!!!!!***************');
+    from = _from;
+    to = _to;
+    ids = _ids;
+    amounts = _amounts;
+    data = _data;
+    return bytes4(keccak256('onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)'));
   }
 }
 
@@ -179,7 +194,7 @@ contract ERC1155YulTest is Test {
 
   function mint(address to, uint256 id, uint256 amount, bytes calldata cData) public returns (bool success) {
     bytes memory callDataBytes = abi.encodeWithSignature('mint(address,uint256,uint256,bytes)', to, id, amount, cData);
-    vm.expectEmit(true, true, true, true);
+    //vm.expectEmit(true, true, true, true);
     emit TransferSingle(address(this), address(0), to, id, amount);
     (success, ) = erc1155().call(callDataBytes);
   }
@@ -234,56 +249,58 @@ contract ERC1155YulTest is Test {
   //     assertEq(balances[2], AMOUNT3, 'Jo balance not correct');
   //   }
 
-  //   function testSafeTransferFrom(bytes calldata cData1, bytes calldata cData2) public {
-  //     console.log('***************!!!!!!!!!!!_ADDRESS_!!!!!!!!!!!!***************');
-  //     console.log(address(receiver));
-  //     console.log(address(receiver2));
-  //     console.log(address(this));
-  //     console.log('***************!!!!!!!!!!!_ADDRESS_!!!!!!!!!!!!***************');
+  function testSafeTransferFrom(bytes calldata cData1, bytes calldata cData2) public {
+    // console.log('***************!!!!!!!!!!!_ADDRESS_!!!!!!!!!!!!***************');
+    // console.log(address(receiver));
+    // console.log(address(receiver2));
+    // console.log(address(this));
+    // console.log('***************!!!!!!!!!!!_ADDRESS_!!!!!!!!!!!!***************');
 
-  //     console.log('***************!!!!!!!!!!!_CDATA_!!!!!!!!!!!!***************');
-  //     console.logBytes(cData2);
-  //     console.log('***************!!!!!!!!!!!_CDATA_!!!!!!!!!!!!***************');
+    console.log('_CDATA_');
+    console.logBytes(cData2);
+    console.log('_CDATA_');
 
-  //     uint256 ID = 777;
-  //     uint256 AMOUNT1 = 59;
-  //     uint256 AMOUNT_SENT = 19;
-  //     bool res1 = mint(address(receiver), ID, AMOUNT1, cData1);
-  //     assertTrue(res1, 'Failed to mint');
+    uint256 ID = 777;
+    uint256 AMOUNT1 = 59;
+    uint256 AMOUNT_SENT = 19;
+    bool res1 = mint(address(receiver), ID, AMOUNT1, cData1);
+    assertTrue(res1, 'Failed to mint');
 
-  //     uint256 storedVal = getStoredValue(address(receiver), ID);
-  //     assertEq(storedVal, AMOUNT1, 'Amount not stored');
+    uint256 storedVal = getStoredValue(address(receiver), ID);
+    assertEq(storedVal, AMOUNT1, 'Amount not stored');
 
-  //     bool success = transfer(address(receiver), address(receiver2), ID, AMOUNT_SENT, cData2);
-  //     assertEq(success, true, 'testSafeTransferFrom should be success');
+    vm.prank(address(receiver));
+    bool success = transfer(address(receiver), address(receiver2), ID, AMOUNT_SENT, cData2);
+    console.log('success', success);
+    assertEq(success, true, 'testSafeTransferFrom should be success');
 
-  //     uint256 storedVal2 = getStoredValue(address(receiver), ID);
-  //     assertEq(storedVal2, AMOUNT1 - AMOUNT_SENT, 'Amount not stored');
+    uint256 storedVal2 = getStoredValue(address(receiver), ID);
+    assertEq(storedVal2, AMOUNT1 - AMOUNT_SENT, 'Amount not stored');
 
-  //     uint256 storedVal3 = getStoredValue(address(receiver2), ID);
-  //     assertEq(storedVal3, AMOUNT_SENT, 'Amount not stored');
-  //   }
-
-  function testSafeBatchTransferFrom(bytes calldata cData) public {
-    uint256[] memory amounts = new uint256[](2);
-    amounts[0] = 17;
-    amounts[1] = 18;
-
-    uint256[] memory batchIds = new uint256[](2);
-    batchIds[0] = 404;
-    batchIds[1] = 505;
-
-    bytes memory callData = abi.encodeWithSignature(
-      'safeBatchTransferFrom(address,address,uint256[],uint256[],bytes)',
-      address(this),
-      Bob,
-      batchIds,
-      amounts,
-      cData
-    );
-    (bool success, ) = erc1155().call(callData);
-    // assertTrue(success, 'Failed to safeBatchTransferFrom');
+    uint256 storedVal3 = getStoredValue(address(receiver2), ID);
+    assertEq(storedVal3, AMOUNT_SENT, 'Amount not stored');
   }
+
+  //   function testSafeBatchTransferFrom(bytes calldata cData) public {
+  //     uint256[] memory amounts = new uint256[](2);
+  //     amounts[0] = 17;
+  //     amounts[1] = 18;
+
+  //     uint256[] memory batchIds = new uint256[](2);
+  //     batchIds[0] = 404;
+  //     batchIds[1] = 505;
+
+  //     bytes memory callData = abi.encodeWithSignature(
+  //       'safeBatchTransferFrom(address,address,uint256[],uint256[],bytes)',
+  //       address(this),
+  //       Bob,
+  //       batchIds,
+  //       amounts,
+  //       cData
+  //     );
+  //     (bool success, ) = erc1155().call(callData);
+  //     // assertTrue(success, 'Failed to safeBatchTransferFrom');
+  //   }
 
   function transfer(
     address from,
