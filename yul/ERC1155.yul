@@ -41,11 +41,10 @@ object "ERC1155Yul" {
         let to := decodeToAddress(0)
         let id := decodeToUint(1)
         let amount := decodeToUint(2)
-        let balanceTo := getBalance(to, id)
+        let balanceTo := getVal(to, id)
         let newBalanceTo := safeAdd(balanceTo, amount)
         storeVal(to, id, newBalanceTo)
-        emitTransferSingle(sender, 0x00, to, id, amount)
-        validateERC1155Recipient(sender, 0x00, to, id, amount)
+        validateERC1155Recipient(sender, 0x00, to, id, amount, 0x64)
       }
       /* batchMint(address,uint256[],uint256[],bytes) */
       case 0xb48ab8b6 {
@@ -57,23 +56,26 @@ object "ERC1155Yul" {
         let amountsLength := calldataload(add(amountsOffset, 0x04))
         checkLengthsEqual(idsLength, amountsLength)
 
+        let idOffset := add(idsOffset, 0x24)
+        let amountOffset := add(amountsOffset, 0x24)
+
         for { let i := 0} lt(i, idsLength) { i := add(i, 1)} {
           // balanceOf[to][ids[i]] += amounts[i];
-          let id := calldataload(add(idsOffset, mul(i, 0x20)))
-          let amount := calldataload(add(amountsOffset, mul(i, 0x20)))
-          let bal := getBalance(to, id)
+          let id := calldataload(add(idOffset, mul(i, 0x20)))
+          let amount := calldataload(add(amountOffset, mul(i, 0x20)))
+
+          let bal := getVal(to, id)
           let newBal := safeAdd(bal, amount)
           storeVal(to, id, newBal)
         }
-        emitTransferBatch(sender, 0x00, to, idsOffset, amountsOffset)
-        validateERC1155BatchRecipient(sender, 0x00, to, idsOffset, amountsOffset)
+        validateERC1155BatchRecipient(sender, 0x00, to, 0x24, 0x44)
       }
       /* burn(address,uint256,uint256) */
       case 0xf5298aca {
         let from := decodeToAddress(0)
         let id := decodeToUint(1)
         let amount := decodeToUint(2)
-        let balanceFrom := getBalance(from, id)
+        let balanceFrom := getVal(from, id)
         let newBalanceFrom := safeSub(balanceFrom, amount)
         storeVal(from, id, newBalanceFrom)
         emitTransferSingle(caller(), from, 0x00, id, amount)
@@ -92,7 +94,7 @@ object "ERC1155Yul" {
           // balanceOf[from][ids[i]] -= amounts[i];
           let id := calldataload(add(idsOffset, mul(i, 0x20)))
           let amount := calldataload(add(amountsOffset, mul(i, 0x20)))
-          let bal := getBalance(from, id)
+          let bal := getVal(from, id)
           let newBal := safeSub(bal, amount)
           storeVal(from, id, newBal)
         }
@@ -109,18 +111,18 @@ object "ERC1155Yul" {
         let accDataOffset := add(add(accOffset, 0x04), 0x20)
         let idsDataOffset := add(add(idsOffset, 0x04), 0x20)
 
-        let ptr := 0x80
-        mstore(ptr, 0x20)
-        ptr := add(ptr, 0x20)
+        let mptr := 0x80
+        mstore(mptr, 0x20)
+        mptr := add(mptr, 0x20)
 
-        mstore(ptr, idsLength)
-        ptr := add(ptr, 0x20)
+        mstore(mptr, idsLength)
+        mptr := add(mptr, 0x20)
 
         for { let i := 0} lt(i, idsLength) { i := add(i, 1)} {
           let owner := calldataload(add(accDataOffset, mul(i, 0x20)))
           let id := calldataload(add(idsDataOffset, mul(i, 0x20)))
-          let bal := getBalance(owner, id)
-          let sPtr := add(ptr, mul(i, 0x20))
+          let bal := getVal(owner, id)
+          let sPtr := add(mptr, mul(i, 0x20))
           mstore(sPtr, bal)
         }
 
@@ -136,16 +138,14 @@ object "ERC1155Yul" {
         let to := decodeToAddress(1)
         let id := decodeToUint(2)
         let amount := decodeToUint(3)
-        let balanceFrom := getBalance(from, id)
+        let balanceFrom := getVal(from, id)
         let newBalanceFrom := safeSub(balanceFrom, amount)
         storeVal(from, id, newBalanceFrom)
 
-        let balanceTo := getBalance(to, id)
+        let balanceTo := getVal(to, id)
         let newBalanceTo := safeAdd(balanceTo, amount)
         storeVal(to, id, newBalanceTo)
-
-        // emitTransferSingle(caller(), from, to, id, amount)
-        validateERC1155Recipient(caller(), from, to, id, amount)
+        validateERC1155Recipient(caller(), from, to, id, amount, 0x84)
       }
       /* safeBatchTransferFrom(address,address,uint256[],uint256[],bytes) */
       case 0x2eb2c2d6 {
@@ -163,26 +163,29 @@ object "ERC1155Yul" {
           let id := calldataload(add(idsOffset, mul(i, 0x20)))
           let amount := calldataload(add(amountsOffset, mul(i, 0x20)))
 
-          let balanceFrom := getBalance(from, id)
+          let balanceFrom := getVal(from, id)
           let newBalanceFrom := safeSub(balanceFrom, amount)
           storeVal(from, id, newBalanceFrom)
 
-          let balanceTo := getBalance(to, id)
+          let balanceTo := getVal(to, id)
           let newBalanceTo := safeAdd(balanceTo, amount)
           storeVal(to, id, newBalanceTo)
         }
-
-        emitTransferBatch(sender, from, to, idsOffset, amountsOffset)
-        validateERC1155BatchRecipient(sender, from, to, idsOffset, amountsOffset)
+ 
+        //validateERC1155BatchRecipient(sender, from, to, idsOffset, amountsOffset)
+      }
+      case 0xa26388bb {
+        revertNotAuthorized()
       }
       default {
         revert(0, 0)
       }
 
-      /* ---------- ERC1155 recipient validation ----------- */
-      function validateERC1155Recipient(sender, from, to, id, amount) {
+      // /* ---------- ERC1155 recipient validation ----------- */
+    
+      function validateERC1155Recipient(sender, from, to, id, amount, offset) {
         if iszero(extcodesize(to)) {
-          require(to)
+            require(to)
         }
 
         if extcodesize(to) {
@@ -193,7 +196,7 @@ object "ERC1155Yul" {
           mstore(0x80, amount)
           mstore(0xa0, 0xa0)
           
-          let dataOffset := calldataload(0x84)
+          let dataOffset := calldataload(offset)
           let dataLength := calldataload(add(dataOffset, 0x04))
           mstore(0xc0, dataLength)
           calldatacopy(0xe0, 0xc4, dataLength)
@@ -204,34 +207,45 @@ object "ERC1155Yul" {
 
           let retSelector := shr(224, mload(0x00))
           require(eq(retSelector, 0xf23a6e61))
-          emitTransferSingle(sender, from, to, id, amount)
         }
+
+        emitTransferSingle(sender, from, to, id, amount)
       }
-      function validateERC1155BatchRecipient(sender, from, to, idsOffset, amountsOffset) {
+      function validateERC1155BatchRecipient(sender, from, to, offset1, offset2) {
         if iszero(extcodesize(to)) {
           require(to)
         }
+
+       // batchMint                            (address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data)
+        // safeBatchTransferFrom( address from, address to, uint256[] calldata ids, uint256[] calldata amounts, bytes calldata data)
 
         if extcodesize(to) {
           mstore(0x00, 0xbc197c81)
           mstore(0x20, sender)
           mstore(0x40, from)
-          let dataLength := sub(calldatasize(), idsOffset)
-          calldatacopy(0x60, idsOffset, dataLength)
-          let argSize := add(0x60, dataLength)
-          let success := call(gas(), to, 0, 0x1c, argSize, 0x00, 0x20)
-          require(success)
+          mstore(0x60, 0x60)
 
-          let retSelector := shr(224, mload(0x00))
-          require(eq(retSelector, 0xbc197c81))
-          emitTransferBatch(sender, from, to, idsOffset, amountsOffset)
+
+
+
+
+          let dynDataLength := sub(calldatasize(), 0x24)
+          calldatacopy(0x60, 0x24, dynDataLength)
+          let argSize := add(0x60, dynDataLength)
+          let success := call(gas(), to, 0, 0x1c, argSize, 0x00, 0x20)
+          // require(success)
+
+          // let retSelector := shr(224, mload(0x00))
+          // require(eq(retSelector, 0xbc197c81))
         }
+
+        //emitTransferBatch(sender, from, to, idsOffset, amountsOffset)
       }
 
-      function getBalance(owner, id) -> bal {
-        mstore(0x00, owner)
-        mstore(0x20, id)
-        bal := sload(keccak256(0x00, 0x40))
+      function getVal(key1, key2) -> val {
+        mstore(0x00, key1)
+        mstore(0x20, key2)
+        val := sload(keccak256(0x00, 0x40))
       }
       function checkIsAuthorized(from) {
         let sender := caller()
@@ -296,6 +310,13 @@ object "ERC1155Yul" {
         if iszero(condition) { revert(0, 0) }
       }
       /* ---------- events ----------- */
+      // // URI(value,uint256)
+      // function emitUri(val, id) {
+      //   let sigHash := 0xb7de062599403b33008eebf57e50130d39390f9116d4540c609ce417931d1f6c
+      //   mstore(0x00, val)
+      //   log2(0, 0x20, sigHash, id)
+      // }
+
       // TransferSingle(address,address,address,uint256,uint256)
       function emitTransferSingle(operator, from, to, id, amount) {
         let sigHash := 0xc3d58168c5ae7397731d063d5bbf3d657854427343f4c083240f7aacaa2d0f62
@@ -327,15 +348,15 @@ object "ERC1155Yul" {
       }
 
 
-      /* ---------- revert messages ----------- */
+      /* ---------- reverts ----------- */
       function revertNotAuthorized() {
         /* "ERC1155: not authorized" */
         let mptr := 0x00
         mstore(mptr, 0x8c379a000000000000000000000000000000000000000000000000000000000)
         mstore(add(mptr, 0x04), 0x20)
-        mstore(add(mptr, 0x24), 0x17) // Длина сообщения "ERC1155: not authorized"
+        mstore(add(mptr, 0x24), 0x17) 
         mstore(add(mptr, 0x44), 0x455243313135353a206e6f7420617574686f72697a6564000000000000000000)
-        revert(mptr, 0x64) // 0x64 = 100 байтов до конца сообщения
+        revert(mptr, 0x64) 
       }
 
       function revertUnsafeRecipient() {
@@ -343,9 +364,9 @@ object "ERC1155Yul" {
         let mptr := 0x00
         mstore(mptr, 0x8c379a000000000000000000000000000000000000000000000000000000000)
         mstore(add(mptr, 0x04), 0x20)
-        mstore(add(mptr, 0x24), 0x19) // Длина сообщения "ERC1155: unsafe recipient"
+        mstore(add(mptr, 0x24), 0x19) 
         mstore(add(mptr, 0x44), 0x455243313135353a20756e7361666520726563697069656e7400000000000000)
-        revert(mptr, 0x64) // 0x64 = 100 байтов до конца сообщения
+        revert(mptr, 0x64) 
       }
 
       function revertLengthMismatch() {
@@ -353,9 +374,9 @@ object "ERC1155Yul" {
         let mptr := 0x00
         mstore(mptr, 0x8c379a000000000000000000000000000000000000000000000000000000000)
         mstore(add(mptr, 0x04), 0x20)
-        mstore(add(mptr, 0x24), 0x18) // Длина сообщения "ERC1155: length mismatch"
+        mstore(add(mptr, 0x24), 0x18) 
         mstore(add(mptr, 0x44), 0x455243313135353a206c656e677468206d69736d617463680000000000000000)
-        revert(mptr, 0x64) // 0x64 = 100 байтов до конца сообщения
+        revert(mptr, 0x64) 
       }
     }
   }

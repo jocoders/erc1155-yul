@@ -4,6 +4,7 @@ pragma solidity >=0.8.0;
 import { Test, console } from 'forge-std/Test.sol';
 import { YulDeployer } from './lib/YulDeployer.sol';
 import { ERC1155TokenReceiver } from '../contracts/ERC1155TokenReceiver.sol';
+
 interface ERC1155 {}
 
 contract Receiver is ERC1155TokenReceiver {
@@ -108,74 +109,61 @@ contract ERC1155YulTest is Test {
   //   assertEq(uint256(storedVal), 1, 'Approval for all not set');
   // }
 
-  //   function testMint(bytes calldata cData) public {
-  //     uint256 ID = 777;
-  //     uint256 AMOUNT1 = 5;
-  //     uint256 AMOUNT2 = 9;
-  //     bool res1 = mint(address(receiver), ID, AMOUNT1, cData);
-  //     assertTrue(res1, 'Failed to mint');
+  // function testMint(bytes calldata cData) public {
+  //   console.log('_CDATA_');
+  //   console.logBytes(cData);
+  //   console.log('_CDATA_');
+  //   uint256 ID = 777;
+  //   uint256 AMOUNT1 = 5;
+  //   uint256 AMOUNT2 = 9;
+  //   bool res1 = mint(address(receiver), ID, AMOUNT1, cData);
+  //   console.log('res1', res1);
+  //   assertTrue(res1, 'Failed to mint');
 
-  //     bytes32 slot = keccak256(abi.encode(address(receiver), ID));
-  //     bytes32 storedVal = vm.load(erc1155(), slot);
-  //     assertEq(uint256(storedVal), AMOUNT1, 'Amount not stored');
+  //   bytes32 slot = keccak256(abi.encode(address(receiver), ID));
+  //   bytes32 storedVal = vm.load(erc1155(), slot);
+  //   assertEq(uint256(storedVal), AMOUNT1, 'Amount not stored');
 
-  //     bool res2 = mint(address(receiver), ID, AMOUNT2, cData);
-  //     assertTrue(res2, 'Failed to mint');
+  //   bool res2 = mint(address(receiver), ID, AMOUNT2, cData);
+  //   assertTrue(res2, 'Failed to mint');
 
-  //     bytes32 slot2 = keccak256(abi.encode(address(receiver), ID));
-  //     bytes32 storedVal2 = vm.load(erc1155(), slot2);
-  //     assertEq(uint256(storedVal2), AMOUNT1 + AMOUNT2, 'Amount not stored');
-  //   }
-
-  // function testCheckDecodeToUint(uint256 value) public {
-  //   bytes memory callDataBytes = abi.encodeWithSignature('checkDecodeToUint(uint256)', value);
-  //   (bool success, bytes memory returnData) = erc1155().call(callDataBytes);
-  //   assertTrue(success);
-  //   uint256 retValue = abi.decode(returnData, (uint256));
-  //   assertEq(retValue, value, 'Returned value does not match');
+  //   bytes32 slot2 = keccak256(abi.encode(address(receiver), ID));
+  //   bytes32 storedVal2 = vm.load(erc1155(), slot2);
+  //   assertEq(uint256(storedVal2), AMOUNT1 + AMOUNT2, 'Amount not stored');
   // }
 
-  // function testCheckDecodeToAddress(address value) public {
-  //   bytes memory callDataBytes = abi.encodeWithSignature('checkDecodeToAddress(address)', value);
-  //   (bool success, bytes memory returnData) = erc1155().call(callDataBytes);
-  //   assertTrue(success);
-  //   address retValue = abi.decode(returnData, (address));
-  //   assertEq(retValue, value, 'Returned value does not match');
+  // function testBurn(bytes calldata cData) public {
+  //   uint256 ID = 333;
+  //   uint256 AMOUNT_MINT = 292;
+  //   bool res1 = mint(address(receiver), ID, AMOUNT_MINT, cData);
+  //   assertTrue(res1, 'Failed to mint');
+
+  //   uint256 storedVal = getStoredValue(address(receiver), ID);
+  //   assertEq(storedVal, AMOUNT_MINT, 'Amount not stored');
+
+  //   uint256 AMOUNT_BURN = 100;
+  //   bool success = burn(address(receiver), ID, AMOUNT_BURN);
+  //   assertTrue(success, 'Failed to burn');
+
+  //   uint256 storedVal2 = getStoredValue(address(receiver), ID);
+  //   assertEq(storedVal2, AMOUNT_MINT - AMOUNT_BURN, 'Amount not burned');
+
+  //   uint256 AMOUNT_BURN2 = 39;
+  //   bool success2 = burn(address(receiver), ID, AMOUNT_BURN2);
+  //   assertTrue(success2, 'Failed to burn');
+
+  //   uint256 storedVal3 = getStoredValue(address(receiver), ID);
+  //   assertEq(storedVal3, AMOUNT_MINT - AMOUNT_BURN - AMOUNT_BURN2, 'Amount not burned');
   // }
 
-  //   function testBurn(bytes calldata cData) public {
-  //     uint256 ID = 333;
-  //     uint256 AMOUNT_MINT = 292;
-  //     bool res1 = mint(address(receiver), ID, AMOUNT_MINT, cData);
-  //     assertTrue(res1, 'Failed to mint');
+  // function testSafeTransferFromFailed(bytes calldata cData) public {
+  //   address TO = address(0x456);
+  //   uint256 ID = 45;
+  //   uint256 AMOUNT = 9;
 
-  //     uint256 storedVal = getStoredValue(address(receiver), ID);
-  //     assertEq(storedVal, AMOUNT_MINT, 'Amount not stored');
-
-  //     uint256 AMOUNT_BURN = 100;
-  //     bool success = burn(address(receiver), ID, AMOUNT_BURN);
-  //     assertTrue(success, 'Failed to burn');
-
-  //     uint256 storedVal2 = getStoredValue(address(receiver), ID);
-  //     assertEq(storedVal2, AMOUNT_MINT - AMOUNT_BURN, 'Amount not burned');
-
-  //     uint256 AMOUNT_BURN2 = 39;
-  //     bool success2 = burn(address(receiver), ID, AMOUNT_BURN2);
-  //     assertTrue(success2, 'Failed to burn');
-
-  //     uint256 storedVal3 = getStoredValue(address(receiver), ID);
-  //     assertEq(storedVal3, AMOUNT_MINT - AMOUNT_BURN - AMOUNT_BURN2, 'Amount not burned');
-  //   }
-
-  //   function testSafeTransferFromFailed(bytes calldata cData) public {
-  //     address TO = address(0x456);
-  //     uint256 ID = 45;
-  //     uint256 AMOUNT = 9;
-
-  //     vm.expectRevert();
-  //     bool success = transfer(Alice, TO, ID, AMOUNT, cData);
-  //     assertTrue(!success, 'Transfer should fail');
-  //   }
+  //   vm.expectRevert();
+  //   transfer(Alice, TO, ID, AMOUNT, cData);
+  // }
 
   // function testSafeTransferFromUnderflowRevert(bytes calldata cData) public {
   //   uint256 ID = 777;
@@ -188,98 +176,72 @@ contract ERC1155YulTest is Test {
   //   assertEq(storedVal, AMOUNT1, 'Amount not stored');
 
   //   vm.expectRevert();
-  //   bool success = transfer(address(this), address(receiver2), ID, AMOUNT_SENT, cData);
-  //   //assertTrue(!success, 'Transfer should fail');
+  //   transfer(address(this), address(receiver2), ID, AMOUNT_SENT, cData);
   // }
 
-  function mint(address to, uint256 id, uint256 amount, bytes calldata cData) public returns (bool success) {
-    bytes memory callDataBytes = abi.encodeWithSignature('mint(address,uint256,uint256,bytes)', to, id, amount, cData);
-    //vm.expectEmit(true, true, true, true);
-    emit TransferSingle(address(this), address(0), to, id, amount);
-    (success, ) = erc1155().call(callDataBytes);
-  }
+  // function testBalanceOfBatch(bytes calldata cData1) public {
+  //   console.log('***************!!!!!!!!!!!_ADDRESS_!!!!!!!!!!!!***************');
+  //   console.log(address(receiver));
+  //   console.log(address(receiver2));
+  //   console.log(address(this));
+  //   console.log('***************!!!!!!!!!!!_ADDRESS_!!!!!!!!!!!!***************');
 
-  function burn(address from, uint256 id, uint256 amount) public returns (bool success) {
-    bytes memory callData = abi.encodeWithSignature('burn(address,uint256,uint256)', from, id, amount);
-    vm.expectEmit(true, true, true, true);
-    emit TransferSingle(address(this), from, address(0), id, amount);
-    (success, ) = erc1155().call(callData);
-  }
+  //   uint256 ID1 = 777;
+  //   uint256 AMOUNT1 = 59;
+  //   bool res1 = mint(Alice, ID1, AMOUNT1, cData1);
+  //   assertTrue(res1, 'Failed to mint Alice');
+  //   accounts.push(Alice);
+  //   ids.push(ID1);
 
-  function getStoredValue(address from, uint256 id) public returns (uint256) {
-    bytes32 slot = keccak256(abi.encode(from, id));
-    bytes32 storedVal = vm.load(erc1155(), slot);
-    return uint256(storedVal);
-  }
+  //   uint256 ID2 = 808;
+  //   uint256 AMOUNT2 = 48;
+  //   bool res2 = mint(Bob, ID2, AMOUNT2, cData1);
+  //   assertTrue(res2, 'Failed to mint Bob');
+  //   accounts.push(Bob);
+  //   ids.push(ID2);
 
-  //   function testBalanceOfBatch(bytes calldata cData1) public {
-  //     console.log('***************!!!!!!!!!!!_ADDRESS_!!!!!!!!!!!!***************');
-  //     console.log(address(receiver));
-  //     console.log(address(receiver2));
-  //     console.log(address(this));
-  //     console.log('***************!!!!!!!!!!!_ADDRESS_!!!!!!!!!!!!***************');
+  //   uint256 ID3 = 3456;
+  //   uint256 AMOUNT3 = 4880;
+  //   bool res3 = mint(Jo, ID3, AMOUNT3, cData1);
+  //   assertTrue(res3, 'Failed to mint Jo');
+  //   accounts.push(Jo);
+  //   ids.push(ID3);
 
-  //     uint256 ID1 = 777;
-  //     uint256 AMOUNT1 = 59;
-  //     bool res1 = mint(Alice, ID1, AMOUNT1, cData1);
-  //     assertTrue(res1, 'Failed to mint Alice');
-  //     accounts.push(Alice);
-  //     ids.push(ID1);
+  //   bytes memory callDataBytes = abi.encodeWithSignature('balanceOfBatch(address[],uint256[])', accounts, ids);
+  //   (bool success, bytes memory returnData) = erc1155().call(callDataBytes);
+  //   assertTrue(success);
+  //   uint256[] memory balances = abi.decode(returnData, (uint256[]));
+  //   assertEq(balances[0], AMOUNT1, 'Alice balance not correct');
+  //   assertEq(balances[1], AMOUNT2, 'Bob balance not correct');
+  //   assertEq(balances[2], AMOUNT3, 'Jo balance not correct');
+  // }
 
-  //     uint256 ID2 = 808;
-  //     uint256 AMOUNT2 = 48;
-  //     bool res2 = mint(Bob, ID2, AMOUNT2, cData1);
-  //     assertTrue(res2, 'Failed to mint Bob');
-  //     accounts.push(Bob);
-  //     ids.push(ID2);
+  // function testSafeTransferFrom(bytes calldata cData1, bytes calldata cData2) public {
 
-  //     uint256 ID3 = 3456;
-  //     uint256 AMOUNT3 = 4880;
-  //     bool res3 = mint(Jo, ID3, AMOUNT3, cData1);
-  //     assertTrue(res3, 'Failed to mint Jo');
-  //     accounts.push(Jo);
-  //     ids.push(ID3);
+  //   console.log('_CDATA_');
+  //   console.logBytes(cData2);
+  //   console.log('_CDATA_');
 
-  //     bytes memory callDataBytes = abi.encodeWithSignature('balanceOfBatch(address[],uint256[])', accounts, ids);
-  //     (bool success, bytes memory returnData) = erc1155().call(callDataBytes);
-  //     assertTrue(success);
-  //     uint256[] memory balances = abi.decode(returnData, (uint256[]));
-  //     assertEq(balances[0], AMOUNT1, 'Alice balance not correct');
-  //     assertEq(balances[1], AMOUNT2, 'Bob balance not correct');
-  //     assertEq(balances[2], AMOUNT3, 'Jo balance not correct');
-  //   }
+  //   uint256 ID = 777;
+  //   uint256 AMOUNT1 = 59;
+  //   uint256 AMOUNT_SENT = 19;
+  //   bool res1 = mint(address(receiver), ID, AMOUNT1, cData1);
+  //   assertTrue(res1, 'Failed to mint');
 
-  function testSafeTransferFrom(bytes calldata cData1, bytes calldata cData2) public {
-    // console.log('***************!!!!!!!!!!!_ADDRESS_!!!!!!!!!!!!***************');
-    // console.log(address(receiver));
-    // console.log(address(receiver2));
-    // console.log(address(this));
-    // console.log('***************!!!!!!!!!!!_ADDRESS_!!!!!!!!!!!!***************');
+  //   uint256 storedVal = getStoredValue(address(receiver), ID);
+  //   assertEq(storedVal, AMOUNT1, 'Amount not stored');
 
-    console.log('_CDATA_');
-    console.logBytes(cData2);
-    console.log('_CDATA_');
+  //   vm.prank(address(receiver));
+  //   bool success = transfer(address(receiver), address(receiver2), ID, AMOUNT_SENT, cData2);
+  //   console.log('success', success);
+  //   assertEq(success, true, 'testSafeTransferFrom should be success');
 
-    uint256 ID = 777;
-    uint256 AMOUNT1 = 59;
-    uint256 AMOUNT_SENT = 19;
-    bool res1 = mint(address(receiver), ID, AMOUNT1, cData1);
-    assertTrue(res1, 'Failed to mint');
+  //   uint256 storedVal2 = getStoredValue(address(receiver), ID);
+  //   assertEq(storedVal2, AMOUNT1 - AMOUNT_SENT, 'Amount not stored');
 
-    uint256 storedVal = getStoredValue(address(receiver), ID);
-    assertEq(storedVal, AMOUNT1, 'Amount not stored');
-
-    vm.prank(address(receiver));
-    bool success = transfer(address(receiver), address(receiver2), ID, AMOUNT_SENT, cData2);
-    console.log('success', success);
-    assertEq(success, true, 'testSafeTransferFrom should be success');
-
-    uint256 storedVal2 = getStoredValue(address(receiver), ID);
-    assertEq(storedVal2, AMOUNT1 - AMOUNT_SENT, 'Amount not stored');
-
-    uint256 storedVal3 = getStoredValue(address(receiver2), ID);
-    assertEq(storedVal3, AMOUNT_SENT, 'Amount not stored');
-  }
+  //   uint256 storedVal3 = getStoredValue(address(receiver2), ID);
+  //   assertEq(storedVal3, AMOUNT_SENT, 'Amount not stored');
+  // }
 
   //   function testSafeBatchTransferFrom(bytes calldata cData) public {
   //     uint256[] memory amounts = new uint256[](2);
@@ -302,6 +264,63 @@ contract ERC1155YulTest is Test {
   //     // assertTrue(success, 'Failed to safeBatchTransferFrom');
   //   }
 
+  function testBatchMint(bytes calldata cData) public {
+    uint256[] memory ids = new uint256[](3);
+    ids[0] = 77;
+    ids[1] = 88;
+    ids[2] = 99;
+
+    uint256[] memory amounts = new uint256[](3);
+    amounts[0] = 777;
+    amounts[1] = 888;
+    amounts[2] = 999;
+
+    bytes memory callData = abi.encodeWithSignature(
+      'batchMint(address,uint256[],uint256[],bytes)',
+      address(receiver),
+      ids,
+      amounts,
+      cData
+    );
+    (bool success, ) = erc1155().call(callData);
+    assertTrue(success, 'Failed to batch mint');
+
+    bytes32 slot = keccak256(abi.encode(address(receiver), 77));
+    bytes32 storedVal = vm.load(erc1155(), slot);
+    console.log('storedVal', uint256(storedVal));
+    assertEq(uint256(storedVal), 777, 'Amount not stored');
+
+    bytes32 slot1 = keccak256(abi.encode(address(receiver), 88));
+    bytes32 storedVal1 = vm.load(erc1155(), slot1);
+    console.log('storedVal1', uint256(storedVal1));
+    assertEq(uint256(storedVal1), 888, 'Amount not stored');
+
+    bytes32 slot2 = keccak256(abi.encode(address(receiver), 99));
+    bytes32 storedVal2 = vm.load(erc1155(), slot2);
+    console.log('storedVal2', uint256(storedVal2));
+    assertEq(uint256(storedVal2), 999, 'Amount not stored');
+  }
+
+  function mint(address to, uint256 id, uint256 amount, bytes calldata cData) private returns (bool success) {
+    bytes memory callDataBytes = abi.encodeWithSignature('mint(address,uint256,uint256,bytes)', to, id, amount, cData);
+    //vm.expectEmit(true, true, true, true);
+    emit TransferSingle(address(this), address(0), to, id, amount);
+    (success, ) = erc1155().call(callDataBytes);
+  }
+
+  function burn(address from, uint256 id, uint256 amount) private returns (bool success) {
+    bytes memory callData = abi.encodeWithSignature('burn(address,uint256,uint256)', from, id, amount);
+    vm.expectEmit(true, true, true, true);
+    emit TransferSingle(address(this), from, address(0), id, amount);
+    (success, ) = erc1155().call(callData);
+  }
+
+  function getStoredValue(address from, uint256 id) private returns (uint256) {
+    bytes32 slot = keccak256(abi.encode(from, id));
+    bytes32 storedVal = vm.load(erc1155(), slot);
+    return uint256(storedVal);
+  }
+
   function transfer(
     address from,
     address to,
@@ -318,5 +337,13 @@ contract ERC1155YulTest is Test {
       data
     );
     (success, ) = erc1155().call(callDataBytes);
+  }
+
+  function logAddress() private {
+    console.log('***************!!!!!!!!!!!_ADDRESS_!!!!!!!!!!!!***************');
+    console.log(address(receiver));
+    console.log(address(receiver2));
+    console.log(address(this));
+    console.log('***************!!!!!!!!!!!_ADDRESS_!!!!!!!!!!!!***************');
   }
 }
