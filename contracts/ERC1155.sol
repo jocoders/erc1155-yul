@@ -64,9 +64,9 @@ abstract contract ERC1155 {
   }
 
   function safeBatchTransferFrom(
-    address from,
-    address to,
-    uint256[] calldata ids,
+    address from, // 0x04-0x24
+    address to, // 0x24-0x44
+    uint256[] calldata ids, // 0x44-0x64/0x64-0x84/0x84-0xa4
     uint256[] calldata amounts,
     bytes calldata data
   ) public virtual {
