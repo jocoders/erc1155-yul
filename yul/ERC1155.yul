@@ -5,9 +5,6 @@ object "ERC1155Yul" {
   }
   object "Runtime" {
     code {
-      /* Protection against sending Ether */
-      require(iszero(callvalue()))
-
       switch selector()
       /* setApprovalForAll(address,bool) */
       case 0xa22cb465 { 
@@ -50,11 +47,6 @@ object "ERC1155Yul" {
       case 0xb48ab8b6 {
         let sender := caller()
         let to := decodeToAddress(0)
-
-        // calldatacopy(0x00, 0x00, 0x184)
-
-        // log4(0x00, 0x184, 0x00, 0x00, 0x00, 0x00)
-
 
         let idsOffset := add(calldataload(0x24), 0x04)
         let amountsOffset := add(calldataload(0x44), 0x04)
@@ -184,11 +176,7 @@ object "ERC1155Yul" {
 
       /* ------------------------------ ERC1155 recipient validators ------------------------------ */
       function validateERC1155Recipient(sender, from, to, id, amount, dataPoint) {
-        if iszero(extcodesize(to)) {
-            require(to)
-        }
-
-        if extcodesize(to) {
+        if gt(extcodesize(to), 0) {
           mstore(0x00, 0xf23a6e61)
           mstore(0x20, sender)
           mstore(0x40, from)
@@ -209,14 +197,14 @@ object "ERC1155Yul" {
           require(eq(retSelector, 0xf23a6e61))
         }
 
+        if iszero(to) {
+          revertUnsafeRecipient()
+        }
+
         emitTransferSingle(sender, from, to, id, amount)
       }
 
       function validateERC1155BatchRecipient(sender, from, to, idsOffset) {
-        if iszero(extcodesize(to)) {
-          require(to)
-        }
-
         if extcodesize(to) {
           mstore(0x00, 0xbc197c81)
           mstore(0x20, sender)
@@ -230,56 +218,21 @@ object "ERC1155Yul" {
           mstore(0xa0, newMptr2) //dataOffset
 
           let endMptr := copyBytesToMemory(newMptr2, add(idsOffset, 0x40))
+        
+          log3(0x00, endMptr, to, endMptr, endMptr)
+          let success := call(gas(), to, 0, 0x1c, endMptr, 0x00, 0x20)
+          require(success)
 
-          // let checkSelector := mload(0x00)
-          // let sender1 := mload(0x20)
-          // let from1 := mload(0x40)
-
-          // let idsOffset1 := mload(0x60)
-          // let amountOffset1 := mload(0x80)
-          // let dataOffset1 := mload(0xa0)
-
-          // let idsLength1 := mload(0xc0)
-          // let id1 := mload(0xe0)
-          // let id2 := mload(0x100)
-
-          // let amountLength1 := mload(0x120)
-          // let amount1 := mload(0x140)
-          // let amount2 := mload(0x160)
-
-          // let dataLength1 := mload(0x180)
-          // let data1 := mload(0x1a0)
-          // let data2 := mload(0x1c0)
-
-          //log3(0x00, 0x00, checkSelector, sender1, from1)
-          //log3(0x00, 0x00, idsOffset1, amountOffset1, dataOffset1)
-          //log3(0x00, 0x00, idsLength1, id1, id2)
-          //log3(0x00, 0x00, amountLength1, amount1, amount2)
-          //log3(0x00, 0x00, dataLength1, data1, data2)
-          //log3(0x00, 0x00, endMptr, end1, end2)
-          let success := call(gas(), to, 0, 0x00, endMptr, 0x00, 0x20)
-
-// 0xb48ab8b6                                                         [0x00-0x20] checkSelector
-//   0000000000000000000000005991a2df15a8f6a256d3ec51e99254cd3fb576a9 [0x04-0x24] to
-//   0000000000000000000000000000000000000000000000000000000000000080 [0x24-0x44] idsOffset
-//   00000000000000000000000000000000000000000000000000000000000000e0 [0x44-0x64] amountOffset
-//   0000000000000000000000000000000000000000000000000000000000000140 [0x64-0x84] dataOffset
-//   0000000000000000000000000000000000000000000000000000000000000002 [0x84-0xa4] idsLength
-//   000000000000000000000000000000000000000000000000000000000000004d [0xa4-0xc4] id1
-//   0000000000000000000000000000000000000000000000000000000000000058 [0xc4-0xe4] id2
-//   0000000000000000000000000000000000000000000000000000000000000002 [0xe4-0x104] amountLength
-//   0000000000000000000000000000000000000000000000000000000000000309 [0x104-0x124] amount1
-//   0000000000000000000000000000000000000000000000000000000000000378 [0x124-0x144] amount2
-//   0000000000000000000000000000000000000000000000000000000000000020 [0x144-0x164] dataLength
-//   0000000000000000000000000000000000000000000000000000000000000b2d [0x164-0x184] data
-
-
-          // require(success)
-
-          // let retSelector := shr(224, mload(0x00))
-          // require(eq(retSelector, 0xbc197c81))
+          let retSelector := shr(224, mload(0x00))
+          require(eq(retSelector, 0xbc197c81))
         }
-        //emitTransferBatch(sender, from, to, idsOffset)
+
+        
+        if iszero(to) {
+          revertUnsafeRecipient()
+        }
+
+        emitTransferBatch(sender, from, to, idsOffset)
       }
 
       function getStoredVal(key1, key2) -> val {
@@ -294,11 +247,15 @@ object "ERC1155Yul" {
         mstore(0x00, from)
         mstore(0x20, sender)
         let condition := or(eq(from, sender), sload(keccak256(0x00, 0x40)))
-        require(condition)
+        if iszero(condition) {
+          revertNotAuthorized()
+        }
       }
 
       function checkLengthsEqual(idsLength, amountsLength) {
-        require(eq(idsLength, amountsLength))
+        if iszero(eq(idsLength, amountsLength)) {
+          revertLengthMismatch()
+        }
       }
 
       function storeValue(key1, key2, val) {
@@ -443,3 +400,46 @@ object "ERC1155Yul" {
 // function isApprovedForAll     (address _owner, address _operator) external view returns (bool);
 
 // function balanceOfBatch       (address[] calldata _owners, uint256[] calldata _ids) external view returns (uint256[] memory);
+
+
+
+  // let checkSelector := mload(0x00)
+          // let sender1 := mload(0x20)
+          // let from1 := mload(0x40)
+
+          // let idsOffset1 := mload(0x60)
+          // let amountOffset1 := mload(0x80)
+          // let dataOffset1 := mload(0xa0)
+
+          // let idsLength1 := mload(0xc0)
+          // let id1 := mload(0xe0)
+          // let id2 := mload(0x100)
+
+          // let amountLength1 := mload(0x120)
+          // let amount1 := mload(0x140)
+          // let amount2 := mload(0x160)
+
+          // let dataLength1 := mload(0x180)
+          // let data1 := mload(0x1a0)
+          // let data2 := mload(0x1c0)
+
+          // log3(0x00, 0x00, checkSelector, sender1, from1)
+          // log3(0x00, 0x00, idsOffset1, amountOffset1, dataOffset1)
+          // log3(0x00, 0x00, idsLength1, id1, id2)
+          // log3(0x00, 0x00, amountLength1, amount1, amount2)
+          // log3(0x00, 0x00, dataLength1, data1, data2)
+
+// 0xb48ab8b6                                                         [0x00-0x20] checkSelector
+//   0000000000000000000000005991a2df15a8f6a256d3ec51e99254cd3fb576a9 [0x04-0x24] to
+//   0000000000000000000000000000000000000000000000000000000000000080 [0x24-0x44] idsOffset
+//   00000000000000000000000000000000000000000000000000000000000000e0 [0x44-0x64] amountOffset
+//   0000000000000000000000000000000000000000000000000000000000000140 [0x64-0x84] dataOffset
+//   0000000000000000000000000000000000000000000000000000000000000002 [0x84-0xa4] idsLength
+//   000000000000000000000000000000000000000000000000000000000000004d [0xa4-0xc4] id1
+//   0000000000000000000000000000000000000000000000000000000000000058 [0xc4-0xe4] id2
+//   0000000000000000000000000000000000000000000000000000000000000002 [0xe4-0x104] amountLength
+//   0000000000000000000000000000000000000000000000000000000000000309 [0x104-0x124] amount1
+//   0000000000000000000000000000000000000000000000000000000000000378 [0x124-0x144] amount2
+//   0000000000000000000000000000000000000000000000000000000000000020 [0x144-0x164] dataLength
+//   0000000000000000000000000000000000000000000000000000000000000b2d [0x164-0x184] data
+//   ------------------------------------------------------------------------------------------------
