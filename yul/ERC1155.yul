@@ -298,7 +298,7 @@ object "ERC1155Yul" {
       /*                        Decoders                        */
       /*✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦*/
       function selector() -> s {
-          s := div(calldataload(0), 0x100000000000000000000000000000000000000000000000000000000)
+          s := shr(224, calldataload(0))
       }
 
       function decodeToAddress(offset) -> val {
