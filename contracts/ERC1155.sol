@@ -156,8 +156,6 @@ abstract contract ERC1155 {
     for (uint256 i = 0; i < idsLength; ) {
       balanceOf[to][ids[i]] += amounts[i];
 
-      // An array can't have a total length
-      // larger than the max uint256 value.
       unchecked {
         ++i;
       }
@@ -182,8 +180,6 @@ abstract contract ERC1155 {
     for (uint256 i = 0; i < idsLength; ) {
       balanceOf[from][ids[i]] -= amounts[i];
 
-      // An array can't have a total length
-      // larger than the max uint256 value.
       unchecked {
         ++i;
       }

@@ -16,5 +16,3 @@ abstract contract ERC1155TokenReceiver {
     return ERC1155TokenReceiver.onERC1155BatchReceived.selector;
   }
 }
-
-// onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)
