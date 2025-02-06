@@ -67,7 +67,7 @@ object "ERC1155Yul" {
           let newBalanceTo := safeAdd(balanceTo, amount)
           storeVal(to, id, newBalanceTo)
         }
-        validateERC1155BatchRecipient(caller(), 0x00, to, 0x24)
+        validateERC1155BatchRecipient(0x00, to, 0x24)
       }
       /*✦✧✶✧✦* burn(address,uint256,uint256) *✦✧✶✧✦*/
       case 0xf5298aca {
@@ -171,7 +171,7 @@ object "ERC1155Yul" {
           storeVal(to, id, newBalanceTo)
         }
  
-        validateERC1155BatchRecipient(caller(), from, to, idsOffset)
+        validateERC1155BatchRecipient(from, to, idsOffset)
       }
       default {
         revert(0, 0)
@@ -216,7 +216,9 @@ object "ERC1155Yul" {
         emitTransferSingle(sender, from, to, id, amount)
       }
 
-      function validateERC1155BatchRecipient(sender, from, to, idsOffset) {
+      function validateERC1155BatchRecipient(from, to, idsOffset) {
+        let sender := caller()
+
         switch gt(extcodesize(to), 0)
         case 1 {
           mstore(0x00, 0xbc197c81)
