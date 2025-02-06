@@ -178,7 +178,7 @@ object "ERC1155Yul" {
       }
 
       /*✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦*/
-      /*              ERC1155 recipient validators              */
+      /*              ERC1155 recipient validators        */
       /*✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦*/
       function validateERC1155Recipient(from, to, id, amount, dataPoint) {
         let sender := caller()
@@ -251,7 +251,7 @@ object "ERC1155Yul" {
       }
 
       /*✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦*/
-      /*                    Data validators                     */
+      /*                    Data validators               */
       /*✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦*/
       function checkIsAuthorized(from) {
         let sender := caller()
@@ -276,7 +276,7 @@ object "ERC1155Yul" {
       }
 
       /*✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦*/
-      /*                    Storage helpers                     */
+      /*                    Storage helpers               */
       /*✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦*/
       function storeVal(key1, key2, val) {
         mstore(0x00, key1)
@@ -295,7 +295,7 @@ object "ERC1155Yul" {
       }
 
       /*✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦*/
-      /*                        Decoders                        */
+      /*                        Decoders                  */
       /*✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦*/
       function selector() -> s {
           s := shr(224, calldataload(0))
@@ -338,7 +338,7 @@ object "ERC1155Yul" {
       }
 
       /*✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦*/
-      /*                      Math helpers                      */
+      /*                      Math helpers                */
       /*✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦*/
       function safeSub(x, y) -> res {
         if iszero(iszero(gt(y, x))) {
@@ -356,7 +356,7 @@ object "ERC1155Yul" {
       }
 
       /*✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦*/
-      /*                         Events                         */
+      /*                         Events                   */
       /*✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦*/
 
       /*✦✧✶✧✦* emitUri(uint256,uint256) *✦✧✶✧✦*/
@@ -396,7 +396,7 @@ object "ERC1155Yul" {
       }
 
       /*✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦*/
-      /*                      Error events                      */
+      /*                      Error events                */
       /*✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦*/
 
       /*✦✧✶✧✦* revertNotAuthorized() *✦✧✶✧✦*/
