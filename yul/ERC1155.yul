@@ -9,22 +9,22 @@ object "ERC1155Yul" {
       /*✦✧✶✧✦* supportsInterface(bytes4 interfaceId) *✦✧✶✧✦*/
       case 0x01ffc9a7 { 
         let interfaceId := shr(224, calldataload(0x04))
-        let supported
+        let isSupported
 
         switch interfaceId
-        case 0x01ffc9a7 { supported := 1 } 
-        case 0xd9b67a26 { supported := 1 } 
-        case 0x0e89341c { supported := 1 } 
-        default { supported := 0 } 
+        case 0x01ffc9a7 { isSupported := 1 } 
+        case 0xd9b67a26 { isSupported := 1 } 
+        case 0x0e89341c { isSupported := 1 } 
+        default { isSupported := 0 } 
 
-        mstore(0x00, supported)
+        mstore(0x00, isSupported)
         return(0x00, 0x20)
       }
       /*✦✧✶✧✦* isApprovedForAll(address,address) *✦✧✶✧✦*/
       case 0xe985e9c5 {
         let owner := decodeToAddress(0)
         let operator := decodeToAddress(1)
-        let isApproved := getStoredVal(owner, operator)
+        let isApproved := getStoredValue(owner, operator)
 
         mstore(0x00, isApproved)
         return(0x00, 0x20)
@@ -35,7 +35,7 @@ object "ERC1155Yul" {
         let approved := decodeToUint(1)
         let sender := caller()
 
-        storeVal(sender, operator, approved)
+        storeValue(sender, operator, approved)
         emitApprovalForAll(sender, operator, approved)
       }
       /*✦✧✶✧✦* mint(address,uint256,uint256,bytes) *✦✧✶✧✦*/
@@ -43,10 +43,10 @@ object "ERC1155Yul" {
         let to := decodeToAddress(0)
         let id := decodeToUint(1)
         let amount := decodeToUint(2)
-        let balanceTo := getStoredVal(to, id)
+        let balanceTo := getStoredValue(to, id)
         let newBalanceTo := safeAdd(balanceTo, amount)
 
-        storeVal(to, id, newBalanceTo)
+        storeValue(to, id, newBalanceTo)
         validateERC1155Recipient(0x00, to, id, amount, 0x64)
       }
       /*✦✧✶✧✦* batchMint(address,uint256[],uint256[],bytes) *✦✧✶✧✦*/
@@ -57,17 +57,17 @@ object "ERC1155Yul" {
 
         let idsLength := calldataload(idsOffset)
         let amountsLength := calldataload(amountsOffset)
-        checkLengthsEqual(idsLength, amountsLength)
+        checkLengthsAreEqual(idsLength, amountsLength)
 
         for { let i := 0} lt(i, idsLength) { i := add(i, 1)} {
-          let id := getIndexVal(idsOffset, i) 
-          let amount := getIndexVal(amountsOffset, i) 
+          let id := getIndexValue(idsOffset, i) 
+          let amount := getIndexValue(amountsOffset, i) 
 
-          let balanceTo := getStoredVal(to, id)
+          let balanceTo := getStoredValue(to, id)
           let newBalanceTo := safeAdd(balanceTo, amount)
-          storeVal(to, id, newBalanceTo)
+          storeValue(to, id, newBalanceTo)
         }
-        validateERC1155BatchRecipient(0x00, to, 0x24)
+        validateERC1155BatchRecipient(0x00, to, 0x24, 0x44, 0x64)
       }
       /*✦✧✶✧✦* burn(address,uint256,uint256) *✦✧✶✧✦*/
       case 0xf5298aca {
@@ -75,10 +75,10 @@ object "ERC1155Yul" {
         let id := decodeToUint(1)
         let amount := decodeToUint(2)
 
-        let balanceFrom := getStoredVal(from, id)
+        let balanceFrom := getStoredValue(from, id)
         let newBalanceFrom := safeSub(balanceFrom, amount)
 
-        storeVal(from, id, newBalanceFrom)
+        storeValue(from, id, newBalanceFrom)
         emitTransferSingle(caller(), from, 0x00, id, amount)
       }
       /*✦✧✶✧✦* batchBurn(address,uint256[],uint256[]) *✦✧✶✧✦*/
@@ -89,15 +89,15 @@ object "ERC1155Yul" {
 
         let idsLength := calldataload(idsOffset)
         let amountsLength := calldataload(amountsOffset)
-        checkLengthsEqual(idsLength, amountsLength)
+        checkLengthsAreEqual(idsLength, amountsLength)
 
         for { let i := 0} lt(i, idsLength) { i := add(i, 1)} {
-          let id := getIndexVal(idsOffset, i) 
-          let amount := getIndexVal(amountsOffset, i) 
+          let id := getIndexValue(idsOffset, i) 
+          let amount := getIndexValue(amountsOffset, i) 
 
-          let balanceFrom := getStoredVal(from, id)
+          let balanceFrom := getStoredValue(from, id)
           let newBalanceFrom := safeSub(balanceFrom, amount)
-          storeVal(from, id, newBalanceFrom)
+          storeValue(from, id, newBalanceFrom)
         }
         emitTransferBatch(caller(), from, 0x00, idsOffset)
       }
@@ -107,22 +107,22 @@ object "ERC1155Yul" {
         let idsOffset := add(calldataload(0x24), 0x04)
         let accLength := calldataload(accOffset)
         let idsLength := calldataload(idsOffset)
-        checkLengthsEqual(accLength, idsLength)
+        checkLengthsAreEqual(accLength, idsLength)
 
-        let mptr := 0x80
-        mstore(mptr, 0x20)
-        mptr := add(mptr, 0x20)
+        let offset := 0x80
+        mstore(offset, 0x20)
+        offset := add(offset, 0x20)
 
-        mstore(mptr, idsLength)
-        mptr := add(mptr, 0x20)
+        mstore(offset, idsLength)
+        offset := add(offset, 0x20)
 
         for { let i := 0} lt(i, idsLength) { i := add(i, 1)} {
-          let owner := getIndexVal(accOffset, i)
-          let id := getIndexVal(idsOffset, i)
+          let owner := getIndexValue(accOffset, i)
+          let id := getIndexValue(idsOffset, i)
 
-          let balanceOf := getStoredVal(owner, id)
-          let endMptr := add(mptr, mul(i, 0x20))
-          mstore(endMptr, balanceOf)
+          let balanceOf := getStoredValue(owner, id)
+          let finalOffset := add(offset, mul(i, 0x20))
+          mstore(finalOffset, balanceOf)
         }
 
         return(0x80, add(mul(idsLength, 0x20), 0x40))
@@ -136,13 +136,13 @@ object "ERC1155Yul" {
         let id := decodeToUint(2)
         let amount := decodeToUint(3)
 
-        let balanceFrom := getStoredVal(from, id)
+        let balanceFrom := getStoredValue(from, id)
         let newBalanceFrom := safeSub(balanceFrom, amount)
-        storeVal(from, id, newBalanceFrom)
+        storeValue(from, id, newBalanceFrom)
 
-        let balanceTo := getStoredVal(to, id)
+        let balanceTo := getStoredValue(to, id)
         let newBalanceTo := safeAdd(balanceTo, amount)
-        storeVal(to, id, newBalanceTo)
+        storeValue(to, id, newBalanceTo)
         validateERC1155Recipient(from, to, id, amount, 0x84)
       }
       /*✦✧✶✧✦* safeBatchTransferFrom(address,address,uint256[],uint256[],bytes) *✦✧✶✧✦*/
@@ -155,23 +155,23 @@ object "ERC1155Yul" {
 
         let idsLength := calldataload(idsOffset)
         let amountsLength := calldataload(amountsOffset)
-        checkLengthsEqual(idsLength, amountsLength)
+        checkLengthsAreEqual(idsLength, amountsLength)
         checkIsAuthorized(from)
 
         for { let i := 0} lt(i, idsLength) { i := add(i, 1)} {
-          let id := getIndexVal(idsOffset, i) 
-          let amount := getIndexVal(amountsOffset, i)
+          let id := getIndexValue(idsOffset, i) 
+          let amount := getIndexValue(amountsOffset, i)
 
-          let balanceFrom := getStoredVal(from, id)
+          let balanceFrom := getStoredValue(from, id)
           let newBalanceFrom := safeSub(balanceFrom, amount)
-          storeVal(from, id, newBalanceFrom)
+          storeValue(from, id, newBalanceFrom)
 
-          let balanceTo := getStoredVal(to, id)
+          let balanceTo := getStoredValue(to, id)
           let newBalanceTo := safeAdd(balanceTo, amount)
-          storeVal(to, id, newBalanceTo)
+          storeValue(to, id, newBalanceTo)
         }
  
-        validateERC1155BatchRecipient(from, to, idsOffset)
+        validateERC1155BatchRecipient(from, to, 0x44, 0x64, 0x84)
       }
       default {
         revert(0, 0)
@@ -180,30 +180,30 @@ object "ERC1155Yul" {
       /*✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦*/
       /*              ERC1155 recipient validators        */
       /*✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦*/
-      function validateERC1155Recipient(from, to, id, amount, dataPoint) {
+      function validateERC1155Recipient(from, to, id, amount, dataOffsetPointer) {
         let sender := caller()
 
         switch gt(extcodesize(to), 0)
         case 1 {
-          mstore(0x00, 0xf23a6e61)
+          mstore(0x00, 0xf23a6e61) // store selector onERC1155Received(address,address,uint256,uint256,bytes)
           mstore(0x20, sender)
           mstore(0x40, from)
           mstore(0x60, id)
           mstore(0x80, amount)
-          mstore(0xa0, 0xa0)
+          mstore(0xa0, 0xa0) // store bytes data offset
           
-          let dataOffset := calldataload(dataPoint)
+          let dataOffset := calldataload(dataOffsetPointer)
           let dataLength := calldataload(add(dataOffset, 0x04))
           mstore(0xc0, dataLength)
-          calldatacopy(0xe0, add(dataPoint, 0x40), dataLength)
+          calldatacopy(0xe0, add(dataOffsetPointer, 0x40), dataLength) // store bytes data to memory
 
           let argSize := add(0xe0, dataLength)
           let success := call(gas(), to, 0, 0x1c, argSize, 0x00, 0x20)
           require(success)
 
-          let retSelector := shr(224, mload(0x00))
+          let extractedSelector := shr(224, mload(0x00))
 
-          if iszero(eq(retSelector, 0xf23a6e61)) {
+          if iszero(eq(extractedSelector, 0xf23a6e61)) {
             revertUnsafeRecipient()
           }
         }
@@ -216,32 +216,87 @@ object "ERC1155Yul" {
         emitTransferSingle(sender, from, to, id, amount)
       }
 
-      function validateERC1155BatchRecipient(from, to, idsOffset) {
+      function validateERC1155BatchRecipient(from, to, idsOffsetPointer, amountOffsetPointer, bytesOffsetPointer) {
         let sender := caller()
 
         switch gt(extcodesize(to), 0)
         case 1 {
-          mstore(0x00, 0xbc197c81)
+          mstore(0x00, 0xbc197c81) // store selector onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)
           mstore(0x20, sender)
           mstore(0x40, from)
-          mstore(0x60, 0xc0) 
+          mstore(0x60, 0xc0) // save offset for ids[]
 
-          let newMptr := copyDataToMemory(0xc0, idsOffset)
-          mstore(0x80, newMptr) 
+          let offset := copyDataToMemory(0xc0, idsOffsetPointer)
+          mstore(0x80, offset) // save offset for amounts[]
 
-          let newMptr2 := copyDataToMemory(newMptr, add(idsOffset, 0x20))
-          mstore(0xa0, newMptr2)
+          offset := copyDataToMemory(offset, amountOffsetPointer)
+          mstore(0xa0, offset) // save offset for bytes[]
 
-          let endMptr := copyBytesToMemory(newMptr2, add(idsOffset, 0x40))
-        
-          let success := call(gas(), to, 0, 0x1c, endMptr, 0x00, 0x20)
-          require(success)
+          offset := copyBytesToMemory(offset, bytesOffsetPointer)
 
-          let retSelector := shr(224, mload(0x00))
+          log1(0x00, offset, 0xbc197c81)
 
-          if iszero(eq(retSelector, 0xbc197c81)) {
-            revertUnsafeRecipient()
-          }
+          // Variant with 0 offsets:
+          // Bytes data input:
+          // 0x35220b60aad3eb9d19432bd61fc61db3ccad8484a6a0d75f88f2950cc5ab6020
+          //   878d723f871b0f090858397bbd30a22fb7009225d6a13fb4e0bb9e71941df855
+          //   d5241854963c851dc5e5923dd3ac34b97ff10acf08e7c66697874c672f257350
+          //   855b42
+
+          // Decode data log from => log1(0x00, offset, 0xbc197c81):
+          // 0x00000000000000000000000000000000000000000000000000000000bc197c81 --> [0x00-0x20]   selector 4 bytes
+          //   0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496 --> [0x20-0x40]   sender address
+          //   0000000000000000000000000000000000000000000000000000000000000000 --> [0x40-0x60]   from address 0 because mint
+          //   00000000000000000000000000000000000000000000000000000000000000c0 --> [0x60-0x80]   offset for ids[]
+          //   0000000000000000000000000000000000000000000000000000000000000140 --> [0x80-0xa0]   offset for amounts[]
+          //   00000000000000000000000000000000000000000000000000000000000001c0 --> [0xa0-0xc0]   offset for bytes[]
+          //   0000000000000000000000000000000000000000000000000000000000000003 --> [0xc0-0xe0]   ids length
+          //   000000000000000000000000000000000000000000000000000000000000004d --> [0xe0-0x100]  77
+          //   0000000000000000000000000000000000000000000000000000000000000058 --> [0x100-0x120] 88
+          //   0000000000000000000000000000000000000000000000000000000000000063 --> [0x120-0x140] 99
+          //   0000000000000000000000000000000000000000000000000000000000000003 --> [0x140-0x160] amounts length
+          //   0000000000000000000000000000000000000000000000000000000000000309 --> [0x160-0x180] 777 
+          //   0000000000000000000000000000000000000000000000000000000000000378 --> [0x180-0x1a0] 888
+          //   00000000000000000000000000000000000000000000000000000000000003e7 --> [0x1a0-0x1c0] 999
+          //   0000000000000000000000000000000000000000000000000000000000000063 --> [0x1c0-0x1e0] bytes data length
+          //   35220b60aad3eb9d19432bd61fc61db3ccad8484a6a0d75f88f2950cc5ab6020 --> [0x1e0-0x200] bytes data
+          //   878d723f871b0f090858397bbd30a22fb7009225d6a13fb4e0bb9e71941df855
+          //   d5241854963c851dc5e5923dd3ac34b97ff10acf08e7c66697874c672f257350
+          //   855b420000000000000000000000000000000000000000000000000000000000
+
+
+          // Variant without 0 offsets:
+          // Bytes data input:
+          // 0xc7dc8e5d29ff238fad3d47fdc5d7f31f357ac3
+
+          // Decode data log from => log1(0x00, offset, 0xbc197c81):
+          // 0x00000000000000000000000000000000000000000000000000000000bc197c81 --> [0x00-0x20]   selector 4 bytes
+          //   0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496 --> [0x20-0x40]   sender address  
+          //   0000000000000000000000000000000000000000000000000000000000000000 --> [0x40-0x60]   from address 0 because mint
+          //   00000000000000000000000000000000000000000000000000000000000000c0 --> [0x60-0x80]   offset for ids[]
+          //   0000000000000000000000000000000000000000000000000000000000000140 --> [0x80-0xa0]   offset for amounts[]
+          //   00000000000000000000000000000000000000000000000000000000000001c0 --> [0xa0-0xc0]   offset for bytes[]
+          //   0000000000000000000000000000000000000000000000000000000000000003 --> [0xc0-0xe0]   ids length
+          //   000000000000000000000000000000000000000000000000000000000000004d --> [0xe0-0x100]  77
+          //   0000000000000000000000000000000000000000000000000000000000000058 --> [0x100-0x120] 88
+          //   0000000000000000000000000000000000000000000000000000000000000063 --> [0x120-0x140] 99
+          //   0000000000000000000000000000000000000000000000000000000000000003 --> [0x140-0x160] amounts length
+          //   0000000000000000000000000000000000000000000000000000000000000309 --> [0x160-0x180] 777 
+          //   0000000000000000000000000000000000000000000000000000000000000378 --> [0x180-0x1a0] 888
+          //   00000000000000000000000000000000000000000000000000000000000003e7 --> [0x1a0-0x1c0] 999
+          //   0000000000000000000000000000000000000000000000000000000000000013 --> [0x1c0-0x1e0] bytes data length
+          //   c7dc8e5d29ff238fad3d47fdc5d7f31f357ac3                           --> [0x1e0-0x200] bytes data
+
+
+          let success := call(gas(), to, 0, 0x1c, sub(offset, 0x1c), 0x00, 0x20)
+
+          // require(success)
+
+          // let extractedSelector := shr(224, mload(0x00))
+
+          // if iszero(eq(extractedSelector, 0xbc197c81)) {
+          //   revertUnsafeRecipient()
+          // }
         }
         default {
           if eq(to, 0) {
@@ -249,7 +304,7 @@ object "ERC1155Yul" {
           }
         }
 
-        emitTransferBatch(sender, from, to, idsOffset)
+        emitTransferBatch(sender, from, to, idsOffsetPointer)
       }
 
       /*✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦*/
@@ -267,8 +322,8 @@ object "ERC1155Yul" {
         }
       }
 
-      function checkLengthsEqual(idsLength, amountsLength) {
-        if iszero(eq(idsLength, amountsLength)) {
+      function checkLengthsAreEqual(length1, length2) {
+        if iszero(eq(length1, length2)) {
           revertLengthMismatch()
         }
       }
@@ -280,79 +335,80 @@ object "ERC1155Yul" {
       /*✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦*/
       /*                    Storage helpers               */
       /*✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦*/
-      function storeVal(key1, key2, val) {
+      function storeValue(key1, key2, value) {
         mstore(0x00, key1)
         mstore(0x20, key2)
-        sstore(keccak256(0x00, 0x40), val)
+        sstore(keccak256(0x00, 0x40), value)
       }
 
-      function getStoredVal(key1, key2) -> val {
+      function getStoredValue(key1, key2) -> value {
         mstore(0x00, key1)
         mstore(0x20, key2)
-        val := sload(keccak256(0x00, 0x40))
+        value := sload(keccak256(0x00, 0x40))
       }
 
-      function getIndexVal(offset, index) -> val {
-        val := calldataload(add(add(offset, 0x20), mul(index, 0x20)))
+      function getIndexValue(offset, index) -> value {
+        value := calldataload(add(add(offset, 0x20), mul(index, 0x20)))
       }
 
       /*✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦*/
       /*                        Decoders                  */
       /*✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦*/
-      function selector() -> s {
-          s := shr(224, calldataload(0))
+      function selector() -> value {
+          value := shr(224, calldataload(0))
       }
 
-      function decodeToAddress(offset) -> val {
-        val := decodeToUint(offset)
-        require(iszero(and(val, not(0xffffffffffffffffffffffffffffffffffffffff))))
+      function decodeToAddress(position) -> value {
+        value := decodeToUint(position)
+        require(iszero(and(value, not(0xffffffffffffffffffffffffffffffffffffffff))))
       }
 
-      function decodeToUint(offset) -> val {
-        let pos := add(4, mul(offset, 0x20))
+      function decodeToUint(position) -> value {
+        let offset := add(4, mul(position, 0x20))
 
-        if lt(calldatasize(), add(pos, 0x20)) {
+        if lt(calldatasize(), add(offset, 0x20)) {
           revert(0, 0)
         }
-        val := calldataload(pos)
+        value := calldataload(offset)
       }
 
-      function copyDataToMemory(mptr, offset) -> newMptr {
-        let dataOffset := add(calldataload(offset), 0x04)
+      function copyDataToMemory(freeOffset, dataOffsetPointer) -> nextOffset {
+        let dataOffset := add(calldataload(dataOffsetPointer), 0x04)
         let length := calldataload(dataOffset)
 
-        calldatacopy(mptr, dataOffset, add(mul(length, 0x20), 0x20))
-        newMptr := add(mptr, add(mul(length, 0x20), 0x20))
+        calldatacopy(freeOffset, dataOffset, add(mul(length, 0x20), 0x20))
+        nextOffset := add(freeOffset, add(mul(length, 0x20), 0x20))
       }
 
-      function copyBytesToMemory(mptr, offset) -> newMptr {
-        let dataOffset := add(calldataload(offset), 0x04)
+      function copyBytesToMemory(freeOffset, dataOffsetPointer) -> nextOffset {
+        let dataOffset := add(calldataload(dataOffsetPointer), 0x04)
         let length := calldataload(dataOffset)
 
-        let totalLen := add(0x20, length)
-        let rem := mod(length, 0x20)
+        let totalLength := add(0x20, length)
+        let reminder := mod(length, 0x20)
 
-        if rem {
-          totalLen := add(totalLen, sub(0x20, rem))
-        }
-        calldatacopy(mptr, dataOffset, totalLen)
-        newMptr := add(mptr, totalLen)
+        // if reminder {
+        //   totalLength := add(totalLength, sub(0x20, reminder))
+        // }
+
+        calldatacopy(freeOffset, dataOffset, totalLength)
+        nextOffset := add(freeOffset, totalLength)
       }
 
       /*✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦*/
       /*                      Math helpers                */
       /*✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦*/
-      function safeSub(x, y) -> res {
+      function safeSub(x, y) -> result {
         if iszero(iszero(gt(y, x))) {
           revert(0, 0)
         }
-        res := sub(x, y)
+        result := sub(x, y)
       }
 
-      function safeAdd(x, y) -> res {
-        res := add(x, y)
+      function safeAdd(x, y) -> result {
+        result := add(x, y)
 
-        if iszero(gt(res, x)) {
+        if iszero(gt(result, x)) {
           revert(0, 0)
         }
       }
@@ -362,12 +418,12 @@ object "ERC1155Yul" {
       /*✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦*/
 
       /*✦✧✶✧✦* emitUri(uint256,uint256) *✦✧✶✧✦*/
-      function emitUri(id, offset) {
+      function emitUri(id, dataOffset) {
         let sigHash := 0xb7de062599403b33008eebf57e50130d39390f9116d4540c609ce417931d1f6c
         mstore(0x00, 0x20)
 
-        let mptr := copyDataToMemory(0x20, offset)
-        log2(0, mptr, sigHash, id)
+        let offset := copyDataToMemory(0x20, dataOffset)
+        log2(0, offset, sigHash, id)
       }
 
       /*✦✧✶✧✦* emitTransferSingle(address,address,address,uint256,uint256) *✦✧✶✧✦*/
@@ -379,31 +435,31 @@ object "ERC1155Yul" {
       }
       
       /*✦✧✶✧✦* emitApprovalForAll(address,address,bool) *✦✧✶✧✦*/
-      function emitApprovalForAll(owner, operator, approved) {
+      function emitApprovalForAll(owner, operator, isApproved) {
         let sigHash := 0x17307eab39ab6107e8899845ad3d59bd9653f200f220920489ca2b5937696c31
-        mstore(0x00, approved)
+        mstore(0x00, isApproved)
         log3(0, 0x20, sigHash, owner, operator)
       }
 
       /*✦✧✶✧✦* emitTransferBatch(address,address,address,uint256[]) *✦✧✶✧✦*/
-      function emitTransferBatch(operator, from, to, idsOffset) {
+      function emitTransferBatch(operator, from, to, dataOffset) {
         let sigHash := 0x4a39dc06d4c0dbc64b70af90fd698a233a518aa5d07e595d983b8c0526c8f7fb
         mstore(0x00, 0x40) 
 
-        let amoutMptr := copyDataToMemory(0x40, idsOffset) 
-        mstore(0x20, amoutMptr) 
+        let offset := copyDataToMemory(0x40, dataOffset) 
+        mstore(0x20, offset) 
 
-        let endMptr := copyDataToMemory(amoutMptr, add(idsOffset, 0x20))
-        log4(0x00, endMptr, sigHash, operator, from, to)
+        offset := copyDataToMemory(offset, add(dataOffset, 0x20))
+        log4(0x00, offset, sigHash, operator, from, to)
       }
 
       /*✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦*/
-      /*                      Error events                */
+      /*                      Error reverts                     */
       /*✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦.•:*¨¨*:•.✦✧✶✧✦*/
 
       /*✦✧✶✧✦* revertNotAuthorized() *✦✧✶✧✦*/
       function revertNotAuthorized() {
-        mstore(0x00, 0xea8e4eb5)
+        mstore(0x00, 0xea8e4eb5) 
         revert(0x00, 0x20) 
       }
 
