@@ -233,9 +233,9 @@ contract ERC1155YulTest is Test {
         assertEq(storedVal3, AMOUNT_SENT, "Amount not stored");
     }
 
-    // function testBatchMint(bytes calldata cData) public {
-    //   _batchMint(cData, address(receiver));
-    // }
+    function testBatchMint(bytes calldata cData) public {
+        _batchMint(cData, address(receiver));
+    }
 
     function testBatchMintToEoa(bytes calldata cData) public {
         _batchMint(cData, Alice);
@@ -347,7 +347,6 @@ contract ERC1155YulTest is Test {
     {
         for (uint256 i = 0; i < _ids.length; i++) {
             uint256 storedVal = _getStoredValue(to, _ids[i]);
-            console.log("storedVal", storedVal);
             assertEq(storedVal, _isZero ? 0 : _amounts[i], "Amount not stored");
         }
     }
