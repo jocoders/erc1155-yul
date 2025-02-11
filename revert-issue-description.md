@@ -20,7 +20,7 @@ Here are the details of the input arguments and the corresponding logs for two s
 - Amounts: `[777, 888, 999]`
 - Data bytes: `0x35220b60aad3eb9d19432bd61fc61db3ccad8484a6a0d75f88f2950cc5ab6020878d723f871b0f090858397bbd30a22fb7009225d6a13fb4e0bb9e71941df855d5241854963c851dc5e5923dd3ac34b97ff10acf08e7c66697874c672f257350855b42`
 
-- **Log Output from => log1(0x00, offset, 0xbc197c81):**
+- **Log Output from data of log1(0x00, offset, 0x00):**
 
 ```
   0x00000000000000000000000000000000000000000000000000000000bc197c81 --> [0x00-0x20]   selector 4 bytes
@@ -49,7 +49,8 @@ Here are the details of the input arguments and the corresponding logs for two s
 - IDs: `[77, 88, 99]`
 - Amounts: `[777, 888, 999]`
 - Data bytes: `0xc7dc8e5d29ff238fad3d47fdc5d7f31f357ac3`
-- **Log Output from => log1(0x00, offset, 0xbc197c81):**
+  
+- **Log Output from data of log1(0x00, offset, 0x00):**
 
 ```
   0x00000000000000000000000000000000000000000000000000000000bc197c81 --> [0x00-0x20]   selector 4 bytes
