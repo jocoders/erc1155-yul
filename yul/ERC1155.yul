@@ -9,7 +9,7 @@ object "ERC1155Yul" {
       /*✦✧✶✧✦* supportsInterface(bytes4 interfaceId) *✦✧✶✧✦*/
       case 0x01ffc9a7 { 
         let interfaceId := shr(224, calldataload(0x04))
-        let isSupported
+       let isSupported
 
         switch interfaceId
         case 0x01ffc9a7 { isSupported := 1 } 
@@ -259,7 +259,7 @@ object "ERC1155Yul" {
           //   0000000000000000000000000000000000000000000000000000000000000378 --> [0x180-0x1a0] 888
           //   00000000000000000000000000000000000000000000000000000000000003e7 --> [0x1a0-0x1c0] 999
           //   0000000000000000000000000000000000000000000000000000000000000063 --> [0x1c0-0x1e0] bytes data length
-          //   35220b60aad3eb9d19432bd61fc61db3ccad8484a6a0d75f88f2950cc5ab6020 --> [0x1e0-0x200] bytes data
+          //   35220b60aad3eb9d19432bd61fc61db3ccad8484a6a0d75f88f2950cc5ab6020 --> [0x1e0-LAST] bytes data
           //   878d723f871b0f090858397bbd30a22fb7009225d6a13fb4e0bb9e71941df855
           //   d5241854963c851dc5e5923dd3ac34b97ff10acf08e7c66697874c672f257350
           //   855b420000000000000000000000000000000000000000000000000000000000
@@ -297,6 +297,8 @@ object "ERC1155Yul" {
           // if iszero(eq(extractedSelector, 0xbc197c81)) {
           //   revertUnsafeRecipient()
           // }
+
+          // onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)
         }
         default {
           if eq(to, 0) {
