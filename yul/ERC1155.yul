@@ -99,7 +99,7 @@ object "ERC1155Yul" {
           let newBalanceFrom := safeSub(balanceFrom, amount)
           storeValue(from, id, newBalanceFrom)
         }
-        emitTransferBatch(caller(), from, 0x00, idsOffset)
+        emitTransferBatch(caller(), from, 0x00, 0x24)
       }
       /*✦✧✶✧✦* balanceOfBatch(address[],uint256[]) *✦✧✶✧✦*/
       case 0x4e1273f4 {
@@ -224,81 +224,27 @@ object "ERC1155Yul" {
           mstore(0x00, 0xbc197c81) // store selector onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)
           mstore(0x20, sender)
           mstore(0x40, from)
-          mstore(0x60, 0xc0) // save offset for ids[]
+          mstore(0x60, sub(0xc0, 0x20)) // save offset for ids[]
 
           let offset := copyDataToMemory(0xc0, idsOffsetPointer)
-          mstore(0x80, offset) // save offset for amounts[]
+          mstore(0x80, sub(offset, 0x20)) // save offset for amounts[]
 
           offset := copyDataToMemory(offset, amountOffsetPointer)
-          mstore(0xa0, offset) // save offset for bytes[]
+          mstore(0xa0, sub(offset, 0x20)) // save offset for bytes[]
 
           offset := copyBytesToMemory(offset, bytesOffsetPointer)
 
           log1(0x00, offset, 0xbc197c81)
 
-          // Variant with 0 offsets:
-          // Bytes data input:
-          // 0x35220b60aad3eb9d19432bd61fc61db3ccad8484a6a0d75f88f2950cc5ab6020
-          //   878d723f871b0f090858397bbd30a22fb7009225d6a13fb4e0bb9e71941df855
-          //   d5241854963c851dc5e5923dd3ac34b97ff10acf08e7c66697874c672f257350
-          //   855b42
-
-          // Decode data log from => log1(0x00, offset, 0xbc197c81):
-          // 0x00000000000000000000000000000000000000000000000000000000bc197c81 --> [0x00-0x20]   selector 4 bytes
-          //   0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496 --> [0x20-0x40]   sender address
-          //   0000000000000000000000000000000000000000000000000000000000000000 --> [0x40-0x60]   from address 0 because mint
-          //   00000000000000000000000000000000000000000000000000000000000000c0 --> [0x60-0x80]   offset for ids[]
-          //   0000000000000000000000000000000000000000000000000000000000000140 --> [0x80-0xa0]   offset for amounts[]
-          //   00000000000000000000000000000000000000000000000000000000000001c0 --> [0xa0-0xc0]   offset for bytes[]
-          //   0000000000000000000000000000000000000000000000000000000000000003 --> [0xc0-0xe0]   ids length
-          //   000000000000000000000000000000000000000000000000000000000000004d --> [0xe0-0x100]  77
-          //   0000000000000000000000000000000000000000000000000000000000000058 --> [0x100-0x120] 88
-          //   0000000000000000000000000000000000000000000000000000000000000063 --> [0x120-0x140] 99
-          //   0000000000000000000000000000000000000000000000000000000000000003 --> [0x140-0x160] amounts length
-          //   0000000000000000000000000000000000000000000000000000000000000309 --> [0x160-0x180] 777 
-          //   0000000000000000000000000000000000000000000000000000000000000378 --> [0x180-0x1a0] 888
-          //   00000000000000000000000000000000000000000000000000000000000003e7 --> [0x1a0-0x1c0] 999
-          //   0000000000000000000000000000000000000000000000000000000000000063 --> [0x1c0-0x1e0] bytes data length
-          //   35220b60aad3eb9d19432bd61fc61db3ccad8484a6a0d75f88f2950cc5ab6020 --> [0x1e0-LAST] bytes data
-          //   878d723f871b0f090858397bbd30a22fb7009225d6a13fb4e0bb9e71941df855
-          //   d5241854963c851dc5e5923dd3ac34b97ff10acf08e7c66697874c672f257350
-          //   855b420000000000000000000000000000000000000000000000000000000000
-
-
-          // Variant without 0 offsets:
-          // Bytes data input:
-          // 0xc7dc8e5d29ff238fad3d47fdc5d7f31f357ac3
-
-          // Decode data log from => log1(0x00, offset, 0xbc197c81):
-          // 0x00000000000000000000000000000000000000000000000000000000bc197c81 --> [0x00-0x20]   selector 4 bytes
-          //   0000000000000000000000007fa9385be102ac3eac297483dd6233d62b3e1496 --> [0x20-0x40]   sender address  
-          //   0000000000000000000000000000000000000000000000000000000000000000 --> [0x40-0x60]   from address 0 because mint
-          //   00000000000000000000000000000000000000000000000000000000000000c0 --> [0x60-0x80]   offset for ids[]
-          //   0000000000000000000000000000000000000000000000000000000000000140 --> [0x80-0xa0]   offset for amounts[]
-          //   00000000000000000000000000000000000000000000000000000000000001c0 --> [0xa0-0xc0]   offset for bytes[]
-          //   0000000000000000000000000000000000000000000000000000000000000003 --> [0xc0-0xe0]   ids length
-          //   000000000000000000000000000000000000000000000000000000000000004d --> [0xe0-0x100]  77
-          //   0000000000000000000000000000000000000000000000000000000000000058 --> [0x100-0x120] 88
-          //   0000000000000000000000000000000000000000000000000000000000000063 --> [0x120-0x140] 99
-          //   0000000000000000000000000000000000000000000000000000000000000003 --> [0x140-0x160] amounts length
-          //   0000000000000000000000000000000000000000000000000000000000000309 --> [0x160-0x180] 777 
-          //   0000000000000000000000000000000000000000000000000000000000000378 --> [0x180-0x1a0] 888
-          //   00000000000000000000000000000000000000000000000000000000000003e7 --> [0x1a0-0x1c0] 999
-          //   0000000000000000000000000000000000000000000000000000000000000013 --> [0x1c0-0x1e0] bytes data length
-          //   c7dc8e5d29ff238fad3d47fdc5d7f31f357ac3                           --> [0x1e0-0x200] bytes data
-
-
           let success := call(gas(), to, 0, 0x1c, sub(offset, 0x1c), 0x00, 0x20)
 
-          // require(success)
+          require(success)
 
-          // let extractedSelector := shr(224, mload(0x00))
+          let extractedSelector := shr(224, mload(0x00))
 
-          // if iszero(eq(extractedSelector, 0xbc197c81)) {
-          //   revertUnsafeRecipient()
-          // }
-
-          // onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)
+          if iszero(eq(extractedSelector, 0xbc197c81)) {
+            revertUnsafeRecipient()
+          }
         }
         default {
           if eq(to, 0) {
@@ -444,14 +390,14 @@ object "ERC1155Yul" {
       }
 
       /*✦✧✶✧✦* emitTransferBatch(address,address,address,uint256[]) *✦✧✶✧✦*/
-      function emitTransferBatch(operator, from, to, dataOffset) {
+      function emitTransferBatch(operator, from, to, dataOffsetPointer) {
         let sigHash := 0x4a39dc06d4c0dbc64b70af90fd698a233a518aa5d07e595d983b8c0526c8f7fb
         mstore(0x00, 0x40) 
 
-        let offset := copyDataToMemory(0x40, dataOffset) 
+        let offset := copyDataToMemory(0x40, dataOffsetPointer) 
         mstore(0x20, offset) 
 
-        offset := copyDataToMemory(offset, add(dataOffset, 0x20))
+        offset := copyDataToMemory(offset, add(dataOffsetPointer, 0x20))
         log4(0x00, offset, sigHash, operator, from, to)
       }
 
